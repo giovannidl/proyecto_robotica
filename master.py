@@ -77,11 +77,15 @@ class Master:
 			else:
 				actual = next.pop(0)
 				visited.append(actual[0])
-				pos = possible(actual,maze)
+				pos = self.possible(actual,maze)
 				for neighbour in pos:
 					if neighbour[0] not in visited:
 						next.append(neighbour)
 		return actual[1]
+
+	def escucha(self,msg):
+		if msg.data == '1':
+			self.done = True
 
 	def __init__(self):
 		dimX, dimY, maze, initial, objective, depth = self.loadWorld('c.txt')
@@ -93,9 +97,11 @@ class Master:
 		self.objective = objective
 		self.depth = depth
 		self.camino = self.findPath(awesomeMaze,initial,objective,depth)
+		self.done = False
 
 		rospy.init_node('brain',anonymous=True)
 		self.go = rospy.Publisher('todo',String)
+		rospy.Subscriber('done',String,self.escucha)
 
 	def makePath(self):
 		ans = ""
@@ -106,5 +112,7 @@ class Master:
 if __name__ == "__main__":
 	mas = Master()
 	mens = mas.makePath()
-	mas.go.publish(mens)
+	while not rospy.is_shutdown() and not mas.done:
+		mas.go.publish(mens)
+	print("Termine")
 	rospy.spin()

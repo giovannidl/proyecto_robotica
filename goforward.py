@@ -78,19 +78,23 @@ class Nodo:
 			self.sentidoEnderezado = (aux) / abs(aux)
 
 	def solve(self,msg):
-		todo = msg.data.split('#')
-		self.ocupado = True
-		for accion in todo:
-			if accion == "Go":
-				self.chatter.say("Avanza")
-				self.avanza(self.largoPared,0.4)
-			elif accion == "Left":
-				self.chatter.say("Gira izquierda")
-				self.gira(90,-1)
-			else:
-				self.chatter.say("Gira derecha")
-				self.gira(90,1)
-		self.ocupado = False
+		if not self.ocupado and len(self.todo) == 0:
+			self.todo = msg.data.split('#')
+			self.ocupado = True
+			for accion in self.todo:
+				print(accion)
+				if accion == "Go":
+					self.chatter.say("Avanza")
+					self.avanza(self.largoPared,0.4)
+				elif accion == "Left":
+					self.chatter.say("Gira izquierda")
+					self.gira(90,-1)
+				else:
+					self.chatter.say("Gira derecha")
+					self.gira(90,1)
+			if len(self.todo) > 0:
+				self.slave.publish("1")
+			self.ocupado = False
 
 	def __init__(self):
 		#Aca se definen variables utiles
@@ -115,6 +119,7 @@ class Nodo:
 		self.sentidoEnderezado = 1
 		self.ocupado = False
 		self.largoPared = 0.8
+		self.todo = []
 
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
@@ -123,7 +128,8 @@ class Nodo:
 		rospy.Subscriber('amigoFiel',String,self.amigo)
 		rospy.Subscriber('enderezador3',String,self.enderezame)
 		rospy.Subscriber('todo',String,self.solve)
-		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)						
+		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
+		self.slave = rospy.Publisher('done',String)						
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
 		self.chatter = SoundClient()
 
