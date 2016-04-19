@@ -77,6 +77,21 @@ class Nodo:
 		if aux != 0:
 			self.sentidoEnderezado = (aux) / abs(aux)
 
+	def solve(self,msg):
+		todo = msg.data.split('#')
+		self.ocupado = True
+		for accion in todo:
+			if accion == "Go":
+				self.chatter.say("Avanza")
+				self.avanza(self.largoPared,0.4)
+			elif accion == "Left":
+				self.chatter.say("Gira izquierda")
+				self.gira(90,-1)
+			else:
+				self.chatter.say("Gira derecha")
+				self.gira(90,1)
+		self.ocupado = False
+
 	def __init__(self):
 		#Aca se definen variables utiles
 		self.posx = 0
@@ -98,6 +113,8 @@ class Nodo:
 		self.distsPared = [0,0,0]
 		self.enderezado = False
 		self.sentidoEnderezado = 1
+		self.ocupado = False
+		self.largoPared = 0.8
 
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
@@ -105,6 +122,7 @@ class Nodo:
 		rospy.Subscriber('obstaculo',String,self.obstaculo)
 		rospy.Subscriber('amigoFiel',String,self.amigo)
 		rospy.Subscriber('enderezador3',String,self.enderezame)
+		rospy.Subscriber('todo',String,self.solve)
 		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)						
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
 		self.chatter = SoundClient()
@@ -337,7 +355,7 @@ if __name__ == "__main__":
 	#rospy.sleep(1)
 	#roboto.chatter.say('ATTACK')
 	#rospy.sleep(1)
-	roboto.persigueAmigo()
+	#roboto.persigueAmigo()
 	#roboto.pasea()
 	#roboto.gira(90,1)
 	#roboto.gira(90,1)
@@ -347,4 +365,4 @@ if __name__ == "__main__":
 	#roboto.avanzaPasillo(0.4)
 	#roboto.buscaPared()	
 	rospy.sleep(1)
-	#rospy.spin()
+	rospy.spin()
