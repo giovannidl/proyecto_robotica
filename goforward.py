@@ -151,13 +151,21 @@ class Nodo:
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
 			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
-			if min(self.distance) > 0.6:
+			if self.distance[1] > 0.6:
 				cont = min(cont + 0.1, 1)
 			else:
 				cont = max(cont - 0.1, 0.1)
+
+			if self.distance[0] - self.distance[2] > 0.2:
+				move_cmd.angular.z = 1
+			elif self.distance[2] - self.distance[0] > 0.2:
+				move_cmd.angular.z = -1
+			else:
+				move_cmd.angular.z = -0.02
+
 			move_cmd.linear.x = vel_max * cont
 			#print(vel_max * cont)
-			if (min(self.distance) < 0.5 or max(self.distance) > 90):
+			if (self.distance[1] < 0.5 or self.distance[1] > 90):
 				break
 		self.parar()
 		self.espera(0.7)
