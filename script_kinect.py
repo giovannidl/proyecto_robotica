@@ -12,8 +12,9 @@ from cv_bridge import CvBridge, CvBridgeError
 
 class Turtlebot_Kinect(object):
     def __init__(self):
-        self.__depth_img = rospy.Subscriber('/camera/depth/image',Image ,self.__depth_handler)
-        self.__rgb_img= rospy.Subscriber('/camera/rgb/image_color',Image,self.__rgb_handler)
+        #self.__depth_img = rospy.Subscriber('/camera/depth/image',Image ,self.__depth_handler)
+        self.__depth_img = rospy.Subscriber('/camera/depth/image_raw',Image ,self.__depth_handler)
+        self.__rgb_img= rospy.Subscriber('/camera/rgb/image_raw',Image,self.__rgb_handler)
         self.obs = rospy.Publisher('obstaculo',String)
         self.amigo = rospy.Publisher('amigoFiel',String)
         self.dis2 = rospy.Publisher('enderezador3',String)
@@ -36,6 +37,7 @@ class Turtlebot_Kinect(object):
             self.amigo.publish(objetivo)
             self.dis2.publish(enderezadores)
             #rospy.loginfo('1: '+str(self.current_cv_depth_image[320,240]))
+            #print mensaje
             
         except CvBridgeError, e:
             print e
@@ -63,6 +65,7 @@ class Turtlebot_Kinect(object):
             #cv2.imshow('filtro', interes)
             #cv2.waitKey(10)
             contours, hierarchy = cv2.findContours(interes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            max_area = 0
             if len(contours) != 0:
                 index_moments = 0
                 max_area = 0
@@ -106,7 +109,7 @@ class Turtlebot_Kinect(object):
             up = depth[98+i]
             down = depth[378+i]
             aux.append(middle[180:380])
-            aux.append(up[180:380])
+            #aux.append(up[180:380])
             aux.append(down[180:380])
         num_cent = self.superMaxi(aux)
         aux = []
