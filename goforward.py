@@ -29,7 +29,7 @@ class Nodo:
 			self.inicioY = msg.pose.pose.position.y
 			#self.thetaI = (msg.pose.pose.orientation.z + 1) * 180
 			self.partir = False
-     		self.posx = msg.pose.pose.position.x
+		self.posx = msg.pose.pose.position.x
 		self.posy = msg.pose.pose.position.y
 		if (msg.pose.pose.orientation.z > 0):
 			self.theta = math.acos(msg.pose.pose.orientation.w)/(math.pi/2)*180
@@ -88,13 +88,20 @@ class Nodo:
 				print(accion)
 				if accion == "Go":
 					#self.chatter.say("Avanza")
-					self.avanzaSimulador(self.largoPared,0.4)
+					#self.avanzaSimulador(self.largoPared,0.4)
+					self.avanza(self.largoPared,0.4)
 				elif accion == "Left":
 					#self.chatter.say("Gira izquierda")
-					self.giraSimulador(90,1)
+					#self.giraSimulador(90,1)
+					self.gira(90,1)
 				else:
 					#self.chatter.say("Gira derecha")
-					self.giraSimulador(-90,-1)
+					#self.giraSimulador(-90,-1)
+					self.gira(-90,-1)
+				if (max(self.distance) < 1):
+					print(max(self.distance),'este')
+					self.Enderezado = False
+					self.enderezar(0.4)
 			if len(self.todo) > 0:
 				self.slave.publish("1")
 			self.ocupado = False
@@ -126,14 +133,14 @@ class Nodo:
 
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
-   		#rospy.Subscriber('odom',Odometry,self.odometryCb)
-		rospy.Subscriber('/turtlebot/odom',Odometry,self.odometryCb)
+   		rospy.Subscriber('odom',Odometry,self.odometryCb)
+		#rospy.Subscriber('/turtlebot/odom',Odometry,self.odometryCb)
 		rospy.Subscriber('obstaculo',String,self.obstaculo)
 		rospy.Subscriber('amigoFiel',String,self.amigo)
 		rospy.Subscriber('enderezador3',String,self.enderezame)
 		rospy.Subscriber('todo',String,self.solve)
-		self.cmd_vel = rospy.Publisher('/turtlebot/cmd_vel',Twist)		
-		#self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
+		#self.cmd_vel = rospy.Publisher('/turtlebot/cmd_vel',Twist)		
+		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
 		self.slave = rospy.Publisher('done',String)						
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
 		self.chatter = SoundClient()
@@ -147,25 +154,25 @@ class Nodo:
 		move_cmd.linear.x = cont * vel #m/s
 		vel_max = vel
 		recorrido = 0
-		while (not rospy.is_shutdown()) and (abs(recorrido) < metros*(1-self.cl)):
+		while (not rospy.is_shutdown()) and (abs(recorrido) < metros*(1-self.cl)) or self.partir:
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
 			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
-			if self.distance[1] > 0.6:
+			if self.distance[1] > 0.5:
 				cont = min(cont + 0.1, 1)
 			else:
 				cont = max(cont - 0.1, 0.1)
 
-			if self.distance[0] - self.distance[2] > 0.2:
+			if (self.distance[0] - self.distance[2]) > 0.4 and self.distance[2] < 1:
 				move_cmd.angular.z = 1
-			elif self.distance[2] - self.distance[0] > 0.2:
+			elif (self.distance[2] - self.distance[0]) > 0.4 and self.distance[0] < 1:
 				move_cmd.angular.z = -1
 			else:
 				move_cmd.angular.z = -0.02
-
 			move_cmd.linear.x = vel_max * cont
 			#print(vel_max * cont)
-			if (self.distance[1] < 0.5 or self.distance[1] > 90):
+			if (self.distance[1] < 0.6 and self.distance[1] != 0.0):
+				print(self.distance[1])
 				break
 		self.parar()
 		self.espera(0.7)
@@ -209,14 +216,20 @@ class Nodo:
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
 			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
-			#if min(self.distance) > 0.6:
-			#	cont = min(cont + 0.1, 1)
-			#else:
-			#	cont = max(cont - 0.1, 0.1)
+			if self.distance[1] > 0.6:
+				cont = min(cont + 0.1, 1)
+			else:
+				cont = max(cont - 0.1, 0.1)
+			if self.distance[0] - self.distance[2] > 0.2:
+				move_cmd.angular.z = 1
+			elif self.distance[2] - self.distance[0] > 0.2:
+				move_cmd.angular.z = -1
+			else:
+				move_cmd.angular.z = -0.02
 			#move_cmd.linear.x = vel_max * cont
 			#print(vel_max * cont)
-			#if (min(self.distance) < 0.5 or max(self.distance) > 90):
-			#	break
+			if (self.distance[1] < 0.5 or self.distance[1] > 90):
+				break
 		self.parar()
 		self.espera(0.7)
 
@@ -226,7 +239,7 @@ class Nodo:
 		#zobj = objetivo/180 - 1
 		move_cmd = Twist()
 		move_cmd.angular.z = vel
-		error = 2
+		error = 3
 		self.partir = True
 		thetaReal = True
 		while (not rospy.is_shutdown()) and ((abs(self.theta - objetivo) > error) or thetaReal):
@@ -238,8 +251,8 @@ class Nodo:
 					objetivo -= 360
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
-			if (vel > 0 and not self.right) or (vel < 0 and not self.left):
-				break
+			#if (vel > 0 and not self.right) or (vel < 0 and not self.left):
+			#	break
 		self.parar()
 		self.espera(0.7)
 
@@ -417,8 +430,8 @@ class Nodo:
 if __name__ == "__main__":
 	roboto = Nodo()
 	rospy.sleep(1)
-	roboto.chatter.stopAll()
-	#rospy.sleep(1)
+	roboto.chatter.stopAll()	
+#rospy.sleep(1)
 	#roboto.chatter.say('ATTACK')
 	#rospy.sleep(1)
 	#roboto.persigueAmigo()

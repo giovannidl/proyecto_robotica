@@ -45,22 +45,22 @@ class Master:
 		if direction == 'u':
 			ans.append([[y,x,'r'],moves+['Right']])
 			ans.append([[y,x,'l'],moves+['Left']])
-			if maze[y][x][0] == '0' and (y < 3):
+			if maze[x][y][0] == '0' and (y < self.Y):
 				ans.append([[y+1,x,direction],moves+['Go']])
 		elif direction == 'l':
 			ans.append([[y,x,'u'],moves+['Right']])
 			ans.append([[y,x,'d'],moves+['Left']])
-			if maze[y][x][1] == '0' and (x > 0):
+			if maze[x][y][1] == '0' and (x > 0):
 				ans.append([[y,x-1,direction],moves+['Go']])
 		elif direction == 'd':
 			ans.append([[y,x,'l'],moves+['Right']])
 			ans.append([[y,x,'r'],moves+['Left']])
-			if maze[y][x][2] == '0' and (y > 0):
+			if maze[x][y][2] == '0' and (y > 0):
 				ans.append([[y-1,x,direction],moves+['Go']])
 		else:
 			ans.append([[y,x,'d'],moves+['Right']])
 			ans.append([[y,x,'u'],moves+['Left']])
-			if maze[y][x][3] == '0' and (x < 3):
+			if maze[x][y][3] == '0' and (x < self.X):
 				ans.append([[y,x+1,direction],moves+['Go']])
 		return ans
 
@@ -84,6 +84,7 @@ class Master:
 		return actual[1]
 
 	def escucha(self,msg):
+		print(msg.data)
 		if msg.data == '1':
 			self.done = True
 

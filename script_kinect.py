@@ -12,9 +12,9 @@ from cv_bridge import CvBridge, CvBridgeError
 
 class Turtlebot_Kinect(object):
     def __init__(self):
-        #self.__depth_img = rospy.Subscriber('/camera/depth/image',Image ,self.__depth_handler)
+        self.__depth_img = rospy.Subscriber('/camera/depth/image',Image ,self.__depth_handler)
         self.__depth_img = rospy.Subscriber('/camera/depth/image_raw',Image ,self.__depth_handler)
-        self.__rgb_img= rospy.Subscriber('/camera/rgb/image_raw',Image,self.__rgb_handler)
+        self.__rgb_img= rospy.Subscriber('/camera/rgb/image',Image,self.__rgb_handler)
         self.obs = rospy.Publisher('obstaculo',String)
         self.amigo = rospy.Publisher('amigoFiel',String)
         self.dis2 = rospy.Publisher('enderezador3',String)
