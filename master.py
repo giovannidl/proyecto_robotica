@@ -9,7 +9,7 @@ class Master:
 		for i in range(x):
 			col = []
 			for j in range(y):
-				data = uglyMaze[i*x+j][2:]
+				data = uglyMaze[i*y+j][2:]
 				col.append(data)
 			prettyMaze.append(col)
 		return prettyMaze
@@ -17,13 +17,13 @@ class Master:
 	def loadWorld(self,filename):
 		archivo = open(filename)
 		datos = archivo.read().splitlines()
-		x,y = datos[0].split(' ')
+		y,x = datos[0].split(' ')
 		x = int(x)
 		y = int(y)
 		maze = []
 		for i in range(x):
 			for j in range(y):
-				celda = datos[i*x+j+1].split(' ')
+				celda = datos[i*y+j+1].split(' ')
 				maze.append(celda)
 		nStart = int(datos[x*y+2])
 		starts = []
@@ -73,14 +73,16 @@ class Master:
 		while actual[0] not in finish:
 			if len(next) == 0:
 				print('NO WAY')
-				return False
+				return []
 			else:
 				actual = next.pop(0)
-				visited.append(actual[0])
-				pos = self.possible(actual,maze)
-				for neighbour in pos:
-					if neighbour[0] not in visited:
-						next.append(neighbour)
+				if actual[0] not in visited:
+					visited.append(actual[0])
+					pos = self.possible(actual,maze)
+					for neighbour in pos:
+						if neighbour[0] not in visited:
+							next.append(neighbour)
+					print(visited)
 		return actual[1]
 
 	def escucha(self,msg):
@@ -94,7 +96,8 @@ class Master:
 		self.X = dimX
 		self.Y = dimY
 		self.maze = awesomeMaze
-		print(awesomeMaze)
+		for celda in awesomeMaze:
+			print(celda)
 		self.start = initial
 		self.objective = objective
 		self.depth = depth

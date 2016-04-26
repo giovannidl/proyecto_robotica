@@ -69,13 +69,16 @@ class Nodo:
 	def enderezame(self,data):
 		self.distsPared = data.data.split(';')
 		self.distsPared = map(float,self.distsPared)
-		if max(abs(self.distsPared[0] - self.distsPared[1]), abs(self.distsPared[1] - self.distsPared[2])) < 0.03 and self.distsPared[0] != 0:
-			self.enderezado = True
+		if self.center or self.left or self.right:
+			if max(abs(self.distsPared[0] - self.distsPared[1]), abs(self.distsPared[1] - self.distsPared[2])) < 0.01 and self.distsPared[0] != 0:
+				self.enderezado = True
+			else:
+				self.enderezado = False
+			aux = self.distsPared[2] - self.distsPared[0]
+			if aux != 0:
+				self.sentidoEnderezado = (aux) / abs(aux)
 		else:
-			self.enderezado = False
-		aux = self.distsPared[2] - self.distsPared[0]
-		if aux != 0:
-			self.sentidoEnderezado = (aux) / abs(aux)
+			self.enderezado = True
 
 	def solve(self,msg):
 		#print msg
@@ -101,9 +104,10 @@ class Nodo:
 				if (max(self.distance) < 1):
 					print(max(self.distance),'este')
 					self.Enderezado = False
-					self.enderezar(0.4)
+					self.enderezar(1)
 			if len(self.todo) > 0:
-				self.slave.publish("1")
+				#self.slave.publish("1")
+				self.chatter.say('Bitch, Im awesome')
 			self.ocupado = False
 
 	def __init__(self):
@@ -134,12 +138,10 @@ class Nodo:
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
    		rospy.Subscriber('odom',Odometry,self.odometryCb)
-		#rospy.Subscriber('/turtlebot/odom',Odometry,self.odometryCb)
 		rospy.Subscriber('obstaculo',String,self.obstaculo)
 		rospy.Subscriber('amigoFiel',String,self.amigo)
 		rospy.Subscriber('enderezador3',String,self.enderezame)
-		rospy.Subscriber('todo',String,self.solve)
-		#self.cmd_vel = rospy.Publisher('/turtlebot/cmd_vel',Twist)		
+		rospy.Subscriber('todo',String,self.solve)	
 		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
 		self.slave = rospy.Publisher('done',String)						
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
@@ -163,17 +165,23 @@ class Nodo:
 			else:
 				cont = max(cont - 0.1, 0.1)
 
-			if (self.distance[0] - self.distance[2]) > 0.4 and self.distance[2] < 1:
+			if (self.distance[0] - self.distance[2]) > 0.2 and self.distance[2] < 0.7:
 				move_cmd.angular.z = 1
-			elif (self.distance[2] - self.distance[0]) > 0.4 and self.distance[0] < 1:
+				cont = 0.3
+			elif (self.distance[2] - self.distance[0]) > 0.2 and self.distance[0] < 0.7:
 				move_cmd.angular.z = -1
+				cont = 0.3
 			else:
 				move_cmd.angular.z = -0.02
 			move_cmd.linear.x = vel_max * cont
 			#print(vel_max * cont)
-			if (self.distance[1] < 0.6 and self.distance[1] != 0.0):
+			if (self.distance[1] < 0.65 and self.distance[1] != 0.0):
 				print(self.distance[1])
 				break
+		while (not rospy.is_shutdown()) and self.distance[1] < 0.1:
+			move_cmd.linear.x = -0.1
+			move_cmd.angular.z = 0
+			self.cmd_vel.publish(move_cmd)
 		self.parar()
 		self.espera(0.7)
 
@@ -203,37 +211,6 @@ class Nodo:
 		self.parar()
 		self.espera(0.7)
 
-	def avanzaSimulador(self,metros,vel):
-		self.inicio = 0
-		self.partir = True
-		cont = 0.1
-		move_cmd = Twist()
-		move_cmd.angular.z = 0
-		move_cmd.linear.x = vel #m/s
-		vel_max = vel
-		recorrido = 0
-		while (not rospy.is_shutdown()) and (abs(recorrido) <= metros):
-			self.cmd_vel.publish(move_cmd)
-			self.r.sleep()
-			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
-			if self.distance[1] > 0.6:
-				cont = min(cont + 0.1, 1)
-			else:
-				cont = max(cont - 0.1, 0.1)
-			if self.distance[0] - self.distance[2] > 0.2:
-				move_cmd.angular.z = 1
-			elif self.distance[2] - self.distance[0] > 0.2:
-				move_cmd.angular.z = -1
-			else:
-				move_cmd.angular.z = -0.02
-			#move_cmd.linear.x = vel_max * cont
-			#print(vel_max * cont)
-			if (self.distance[1] < 0.5 or self.distance[1] > 90):
-				break
-		self.parar()
-		self.espera(0.7)
-
-
 	def gira(self,grados,vel): 
 		objetivo = grados - 5
 		#zobj = objetivo/180 - 1
@@ -253,25 +230,6 @@ class Nodo:
 			self.r.sleep()
 			#if (vel > 0 and not self.right) or (vel < 0 and not self.left):
 			#	break
-		self.parar()
-		self.espera(0.7)
-
-	def gira2(self,grados,vel): 
-		objetivo = grados - 5
-		#zobj = objetivo/180 - 1
-		move_cmd = Twist()
-		move_cmd.angular.z = vel
-		error = 2
-		self.partir = True
-		thetaReal = True
-		while (not rospy.is_shutdown()) and ((abs(self.theta - objetivo) > error) or thetaReal):
-			if not self.partir and thetaReal:
-				thetaReal = False
-				objetivo += self.theta
-				if (objetivo > 360):
-					objetivo -= 360
-			self.cmd_vel.publish(move_cmd)
-			self.r.sleep()
 		self.parar()
 		self.espera(0.7)
 
@@ -295,30 +253,6 @@ class Nodo:
 				break
 		self.parar()
 		self.espera(0.7)
-
-	def giraSimulador(self,grados,vel): 
-		objetivo = grados
-		#zobj = objetivo/180 - 1
-		error = 2
-		move_cmd = Twist()
-		move_cmd.angular.z = vel
-		self.partir = True
-		thetaReal = True
-		#print "voy a girar con theta igual a " + str(self.theta)
-		while (not rospy.is_shutdown()) and ((abs(self.theta - objetivo)) > error or thetaReal):
-			if not self.partir and thetaReal:
-				thetaReal = False
-				objetivo += self.theta + error
-				#print(self.theta, objetivo)
-				if (objetivo > 360):
-					objetivo -= 360
-				elif (objetivo < 0):
-					objetivo += 360
-			self.cmd_vel.publish(move_cmd)
-			self.r.sleep()
-		self.parar()
-		self.espera(0.7)
-
 
 	def arco(self, radio, grados, angular):
 		#piso liso: 1.51, piso rugoso: 1.93
@@ -392,6 +326,7 @@ class Nodo:
 		while (not rospy.is_shutdown()):
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
+			print(self.enderezado)
 			if (self.enderezado):
 				break
 		self.parar()
