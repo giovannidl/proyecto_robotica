@@ -11,6 +11,8 @@ from std_msgs.msg import String
 from sound_play.msg import SoundRequest
 from sound_play.libsoundplay import SoundClient
 
+MAX_DISTANCE = 3
+
 class Nodo:	
 	def espera(self,seg):
 		for i in range(int(self.rate*seg)):
@@ -39,32 +41,33 @@ class Nodo:
 
 	def obstaculo(self,msj):
 		self.distance = map(float,msj.data.split(':'))
+		
+		'''
+		if self.distance[0] < 0.6 or self.distance[0] > 90:
+			self.stackDistance[0] = min(self.stackDistance[0] + 1, MAX_DISTANCE)
+			self.left = not self.stackDistance[0] == MAX_DISTANCE
+		else:
+			self.stackDistance[0] = max(self.stackDistance[0] - 1, 0)
+			self.left = not self.stackDistance[0] == 0
+		'''
 		self.left = self.distance[0] < 0.6 or self.distance[0] > 90
-		self.center = self.distance[1] < 0.6 or self.distance[1] > 90
+
+		if self.distance[1] < 0.6 or self.distance[1] > 90:
+			self.stackDistance[1] = min(self.stackDistance[1] + 1, MAX_DISTANCE)
+			self.center = not self.stackDistance[1] == MAX_DISTANCE
+		else:
+			self.stackDistance[1] = max(self.stackDistance[1] - 1, 0)
+			self.center = not self.stackDistance[1] == 0
+
+		'''
+		if self.distance[2] < 0.6 or self.distance[2] > 90:
+			self.stackDistance[2] = min(self.stackDistance[2] + 1, MAX_DISTANCE)
+			self.right = not self.stackDistance[2] == MAX_DISTANCE
+		else:
+			self.stackDistance[2] = max(self.stackDistance[2] - 1, 0)
+			self.right = not self.stackDistance[2] == 0
+		'''
 		self.right = self.distance[2] < 0.6 or self.distance[2] > 90
-
-	def amigo(self,msj):
-		self.objetivo = msj.data.split(':')
-		if len(self.objetivo) < 3:
-			self.objetivo.append(0)
-		self.objetivo = map(float,self.objetivo)
-			
-
-		# Vemos si el objetivo sigue en el  centro
-		if self.objetivo[0] < 280:
-			self.pierdeObjetivo = True
-			self.sentidoObjetivo = 1
-		elif self.objetivo[0] > 360:
-			self.pierdeObjetivo = True
-			self.sentidoObjetivo = -1
-		else:
-			self.pierdeObjetivo = False
-
-		# Vemos si se alcanzo el objetivo
-		if self.objetivo[2] < 0.5:
-			self.alcanceObjetivo = True
-		else:
-			self.alcanceObjetivo = False
 
 	def enderezame(self,data):
 		self.distsPared = data.data.split(';')
@@ -100,14 +103,14 @@ class Nodo:
 				else:
 					#self.chatter.say("Gira derecha")
 					#self.giraSimulador(-90,-1)
-					self.gira(-90,-1)
+					self.gira(270,-1)
 				if (max(self.distance) < 1):
-					print(max(self.distance),'este')
-					self.Enderezado = False
+					#self.Enderezado = False
 					self.enderezar(1)
 			if len(self.todo) > 0:
 				#self.slave.publish("1")
-				self.chatter.say('Bitch, Im awesome')
+				#self.chatter.say('Bitch, Im awesome')
+				self.chatter.say('Goal reached, its time to party')
 			self.ocupado = False
 
 	def __init__(self):
@@ -124,6 +127,7 @@ class Nodo:
 		self.center = False
 		self.left = False
 		self.distance = [10,10,10]
+		self.stackDistance = [MAX_DISTANCE / 2,MAX_DISTANCE / 2,MAX_DISTANCE / 2]
 		self.objetivo = [0,0,0]
 		self.pierdeObjetivo = False
 		self.sentidoObjetivo = 1
@@ -139,7 +143,6 @@ class Nodo:
 		rospy.init_node('roboto', anonymous=True) #make node 
    		rospy.Subscriber('odom',Odometry,self.odometryCb)
 		rospy.Subscriber('obstaculo',String,self.obstaculo)
-		rospy.Subscriber('amigoFiel',String,self.amigo)
 		rospy.Subscriber('enderezador3',String,self.enderezame)
 		rospy.Subscriber('todo',String,self.solve)	
 		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
@@ -160,54 +163,34 @@ class Nodo:
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
 			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
-			if self.distance[1] > 0.5:
-				cont = min(cont + 0.1, 1)
+			if not self.center and (abs(recorrido) < metros*(1-self.cl) * 0.9):
+				cont = min(cont + 0.05, 1)
+				print('acelero')
 			else:
-				cont = max(cont - 0.1, 0.1)
+				cont = max(cont - 0.05, 0.1)
+				print('freno')
 
-			if (self.distance[0] - self.distance[2]) > 0.2 and self.distance[2] < 0.7:
+			#if (self.distance[0]) > 0.5:
+			if self.right and not self.left:
 				move_cmd.angular.z = 1
-				cont = 0.3
-			elif (self.distance[2] - self.distance[0]) > 0.2 and self.distance[0] < 0.7:
+				cont = max(cont - 0.05, 0.5)
+				#cont = 0.3
+			#elif (self.distance[2]) > 0.5:
+			elif self.left and not self.right:
+				cont = max(cont - 0.05, 0.5)
 				move_cmd.angular.z = -1
-				cont = 0.3
+				#cont = 0.3
 			else:
 				move_cmd.angular.z = -0.02
 			move_cmd.linear.x = vel_max * cont
 			#print(vel_max * cont)
-			if (self.distance[1] < 0.65 and self.distance[1] != 0.0):
+			if (self.distance[1] < 0.5 and self.distance[1] != 0.0):
 				print(self.distance[1])
 				break
 		while (not rospy.is_shutdown()) and self.distance[1] < 0.1:
 			move_cmd.linear.x = -0.1
 			move_cmd.angular.z = 0
 			self.cmd_vel.publish(move_cmd)
-		self.parar()
-		self.espera(0.7)
-
-	def avanzaAmigo(self,metros,vel):
-		self.inicio = 0
-		self.partir = True
-		cont = 0.1
-		move_cmd = Twist()
-		move_cmd.angular.z = -0.02
-		move_cmd.linear.x = cont * vel #m/s
-		vel_max = vel
-		recorrido = 0
-		while (not rospy.is_shutdown()) and (abs(recorrido) < metros*(1-self.cl)):
-			self.cmd_vel.publish(move_cmd)
-			self.r.sleep()
-			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
-			if self.objetivo[2] > 0.8:
-				cont = min(cont + 0.1, 1)
-			else:
-				cont = max(cont - 0.1, 0.1)
-			move_cmd.linear.x = vel_max * cont
-			#print(vel_max * cont)
-			if (self.alcanceObjetivo):
-				break
-			elif (min(self.distance) < 0.5 or max(self.distance) > 90):
-				break
 		self.parar()
 		self.espera(0.7)
 
@@ -230,27 +213,6 @@ class Nodo:
 			self.r.sleep()
 			#if (vel > 0 and not self.right) or (vel < 0 and not self.left):
 			#	break
-		self.parar()
-		self.espera(0.7)
-
-	def giraAmigo(self,grados,vel): 
-		objetivo = grados - 5
-		#zobj = objetivo/180 - 1
-		move_cmd = Twist()
-		move_cmd.angular.z = vel
-		error = 2
-		self.partir = True
-		thetaReal = True
-		while (not rospy.is_shutdown()) and ((abs(self.theta - objetivo) > error) or thetaReal):
-			if not self.partir and thetaReal:
-				thetaReal = False
-				objetivo += self.theta
-				if (objetivo > 360):
-					objetivo -= 360
-			self.cmd_vel.publish(move_cmd)
-			self.r.sleep()
-			if not self.pierdeObjetivo:
-				break
 		self.parar()
 		self.espera(0.7)
 
@@ -310,23 +272,12 @@ class Nodo:
 			else:
 				self.gira(10000, 1)
 
-	def persigueAmigo(self):
-		while (not rospy.is_shutdown()):
-			if self.pierdeObjetivo:
-				self.giraAmigo(10000, self.sentidoObjetivo)
-			elif not self.center:
-				self.avanzaAmigo(10,0.3)
-			else:
-				print("No puedo llegar")
-
 	def enderezar(self,vel):
 		move_cmd = Twist()
 		move_cmd.angular.z = vel * self.sentidoEnderezado
-		print(self.sentidoEnderezado)
 		while (not rospy.is_shutdown()):
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
-			print(self.enderezado)
 			if (self.enderezado):
 				break
 		self.parar()
@@ -366,17 +317,7 @@ if __name__ == "__main__":
 	roboto = Nodo()
 	rospy.sleep(1)
 	roboto.chatter.stopAll()	
-#rospy.sleep(1)
-	#roboto.chatter.say('ATTACK')
-	#rospy.sleep(1)
-	#roboto.persigueAmigo()
-	#roboto.pasea()
-	#roboto.gira(90,1)
-	#roboto.gira(90,1)
-	#roboto.gira(90,1)
-	#roboto.gira(90,1)
-	#roboto.enderezar(1)
-	#roboto.avanzaPasillo(0.4)
-	#roboto.buscaPared()
+	#roboto.gira(270,-1)
+	roboto.avanza(3,0.4)
 	rospy.sleep(1)
 	rospy.spin()
