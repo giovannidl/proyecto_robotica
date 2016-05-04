@@ -89,6 +89,8 @@ class Master:
 		print(msg.data)
 		if msg.data == '1':
 			self.done = True
+		else:
+			self.walls = msg.data.split('#')[:-1]
 
 	def __init__(self):
 		dimX, dimY, maze, initial, objective, depth = self.loadWorld('c.txt')
@@ -101,26 +103,91 @@ class Master:
 		self.start = initial
 		self.objective = objective
 		self.depth = depth
-		self.camino = self.findPath(awesomeMaze,initial,objective,depth)
+		self.camino = []
+		self.walls = []
 		self.done = False
-		for path in self.camino:
-			print path
-			
+		self.current = []
 
 		rospy.init_node('brain',anonymous=True)
 		self.go = rospy.Publisher('todo',String)
+		self.loc = rospy.Publisher('find',String)
 		rospy.Subscriber('done',String,self.escucha)
 
 	def makePath(self):
+		self.camino = self.findPath(awesomeMaze,initial,objective,depth)
+		for path in self.camino:
+			print path			
 		ans = ""
 		for paso in self.camino:
 			ans += paso+"#"
 		return ans[:-1]
 
+	def shiftByn(lista,n):
+		return lista{n::]+lista[:n:]
+
+	def localize(self):
+		##Primero se buscan todos los estados en los que podria estar
+		for x in range(len(awesomeMaze)):
+			for y in range(len(awesomeMaze)):
+				self.current.append([[x,y,'u']]+shiftByn(awesomeMaze[x][y],0))
+				self.current.append([[x,y,'l']]+shiftByn(awesomeMaze[x][y],1))
+				self.current.append([[x,y,'d']]+shiftByn(awesomeMaze[x][y],2))
+				self.current.append([[x,y,'r']]+shiftByn(awesomeMaze[x][y],3))
+		##Lo hacemos girar y que vea las murallas que lo rodean
+		while len(self.current) > 1:
+			while len(self.walls) < 4:
+				self.loc.publish('Right#Right#Right#Right')
+			##Quitamos los estados que no tengan esas murallas
+			remove = []
+			for choice in range(len(self.current)):
+				if self.current[choice][1] != currentWalls:
+					remove.append(choice)
+			while len(remove) > 0:
+				aux = remove.pop()
+				self.current.pop(aux)
+			##Hacemos que haga una accion y se repite el codigo
+			msg = ''
+			for pared in self.walls:
+				if pared == '1':
+					msg += 'Right#'
+				else:
+					break
+			msg =+ 'Go'
+			self.current = self.actualizarEstados()
+			self.walls = []
+			print('Parece que estoy en:')
+			for estado in self.current:
+				print(estado[0])
+			while not self.done:
+				self.go.publish(msg)
+			self.done = False
+
+	def actualizarEstados():
+		new = []
+		for estado in self.current:
+			if estado[0][2] == 'u':
+				newX = estado[0][0]
+				newY = estado[0][1] + 1
+				new.append([[newX,newY,'u']]+shiftByn(awesomeMaze[newX][newY],0))
+			elif estado[0][2] == 'l':
+				newX = estado[0][0] - 1
+				newY = estado[0][1]
+				new.append([[newX,newY,'l']]+shiftByn(awesomeMaze[newX][newY],1))
+			elif estado[0][2] == 'd':
+				newX = estado[0][0]
+				newY = estado[0][1] - 1
+				new.append([[newX,newY,'d']]+shiftByn(awesomeMaze[newX][newY],2))
+			elif estado[0][2] == 'r':
+				newX = estado[0][0] + 1
+				newY = estado[0][1]
+				new.append([[newX,newY,'u']]+shiftByn(awesomeMaze[newX][newY],3))
+		return new
+
 if __name__ == "__main__":
 	mas = Master()
+	start = mas.localize()
+	mas.start = start
 	mens = mas.makePath()
 	while not rospy.is_shutdown() and not mas.done:
 		mas.go.publish(mens)
-	print("Termine")
 	rospy.spin()

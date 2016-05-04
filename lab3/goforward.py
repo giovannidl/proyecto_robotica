@@ -84,7 +84,6 @@ class Nodo:
 			self.enderezado = True
 
 	def solve(self,msg):
-		#print msg
 		if not self.ocupado and len(self.todo) == 0:
 			self.todo = msg.data.split('#')
 			print self.todo
@@ -93,24 +92,39 @@ class Nodo:
 				self.espera(0.2)
 				print(accion)
 				if accion == "Go":
-					#self.chatter.say("Avanza")
-					#self.avanzaSimulador(self.largoPared,0.4)
 					self.avanza(self.largoPared,0.4)
 				elif accion == "Left":
-					#self.chatter.say("Gira izquierda")
-					#self.giraSimulador(90,1)
 					self.gira(90,1)
 				else:
-					#self.chatter.say("Gira derecha")
-					#self.giraSimulador(-90,-1)
 					self.gira(270,-1)
 				if (max(self.distance) < 1):
-					#self.Enderezado = False
 					self.enderezar(1)
 			if len(self.todo) > 0:
-				#self.slave.publish("1")
-				#self.chatter.say('Bitch, Im awesome')
-				self.chatter.say('Goal reached, its time to party')
+				self.slave.publish("1")
+				#self.chatter.say('Goal reached, its time to party')
+			self.ocupado = False
+
+	def loc(self,msg):
+		if not self.ocupado and len(self.todo) == 0:
+			self.todo = msg.data.split('#')
+			paredes = ''
+			self.ocupado = True
+			for accion in self.todo:
+				self.espera(0.2)
+				if accion == "Go":
+					self.avanza(self.largoPared,0.4)
+				elif accion == "Left":
+					self.gira(90,1)
+				else:
+					self.gira(270,-1)
+				if (max(self.distance) < 1):
+					self.enderezar(1)
+				if self.identificaPared():
+					paredes += '1#'
+				else:
+					paredes += '0#'
+			self.slave.publish(paredes[:-1])
+			self.espera(0.2)
 			self.ocupado = False
 
 	def __init__(self):
@@ -144,9 +158,10 @@ class Nodo:
    		rospy.Subscriber('odom',Odometry,self.odometryCb)
 		rospy.Subscriber('obstaculo',String,self.obstaculo)
 		rospy.Subscriber('enderezador3',String,self.enderezame)
-		rospy.Subscriber('todo',String,self.solve)	
+		rospy.Subscriber('todo',String,self.solve)
+		rospy.Subscriber('find',String,self.loc)
 		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
-		self.slave = rospy.Publisher('done',String)						
+		self.slave = rospy.Publisher('done',String)					
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
 		self.chatter = SoundClient()
 
@@ -304,9 +319,12 @@ class Nodo:
 		if self.center and (self.left or self.right):
 			self.enderezar(1)			
 			self.chatter.say('Objective found')
+			val = True
 		else:
 			self.chatter.say('Objective lost')
+			val = False
 		rospy.sleep(1)
+		return Val
 				
 	def buscaPared(self):
 		for i in range(4):
