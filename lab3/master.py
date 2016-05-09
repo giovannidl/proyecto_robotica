@@ -3,6 +3,16 @@ import rospy
 
 from std_msgs.msg import String
 
+def shiftByn(lista,n): 
+		return lista[n::]+lista[:n:]
+
+'''
+Moví shiftByn hacia fuera de la clase, porque no depende
+directamente de la clase y porque me tiraba el error de que no estaba definido.
+Si lo queremos meter a la clase hay que agregarle un self en los parámetros y
+cambiar la llamada a self.shiftByn
+'''
+
 class Master:
 	def prettyMaze(self,x,y,uglyMaze):
 		prettyMaze = []
@@ -116,23 +126,22 @@ class Master:
 	def makePath(self):
 		self.camino = self.findPath(awesomeMaze,initial,objective,depth)
 		for path in self.camino:
-			print path			
+			print(path)			
 		ans = ""
 		for paso in self.camino:
 			ans += paso+"#"
 		return ans[:-1]
 
-	def shiftByn(lista,n):
-		return lista{n::]+lista[:n:]
-
+	
 	def localize(self):
 		##Primero se buscan todos los estados en los que podria estar
-		for x in range(len(awesomeMaze)):
-			for y in range(len(awesomeMaze)):
-				self.current.append([[x,y,'u']]+shiftByn(awesomeMaze[x][y],0))
-				self.current.append([[x,y,'l']]+shiftByn(awesomeMaze[x][y],1))
-				self.current.append([[x,y,'d']]+shiftByn(awesomeMaze[x][y],2))
-				self.current.append([[x,y,'r']]+shiftByn(awesomeMaze[x][y],3))
+		for x in range(len(self.maze)):#la variable 'awesomeMaze' tiraba error de que no estaba definido
+			for y in range(len(self.maze)):#la cambié por self.maze definida en el init
+				self.current.append([[x,y,'u']]+shiftByn(self.maze[x][y],0))
+				self.current.append([[x,y,'l']]+shiftByn(self.maze[x][y],1))
+				self.current.append([[x,y,'d']]+shiftByn(self.maze[x][y],2))
+				self.current.append([[x,y,'r']]+shiftByn(self.maze[x][y],3))
+		print(len(self.current))
 		##Lo hacemos girar y que vea las murallas que lo rodean
 		while len(self.current) > 1:
 			while len(self.walls) < 4:
