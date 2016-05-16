@@ -108,9 +108,9 @@ class Turtlebot_Kinect(object):
             middle = depth[238+i]
             up = depth[98+i]
             down = depth[378+i]
-            aux.append(middle[180:380])
+            aux.append(middle[300:340])
             #aux.append(up[180:380])
-            aux.append(down[180:380])
+            aux.append(down[300:340])
         num_cent = self.superMaxi(aux)
         aux = []
         for i in range(5):

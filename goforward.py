@@ -84,9 +84,9 @@ class Nodo:
 			self.enderezado = True
 
 	def solve(self,msg):
-		print(msg,2)
 		if (msg.data == ''):
 			self.todo = []
+			#print('SOY UN NINO LIMPIO')
 		elif len(self.todo) == 0:
 			self.todo = msg.data.split('#')
 			print self.todo
@@ -100,20 +100,17 @@ class Nodo:
 					self.gira(90,1)
 				elif accion == "Right":
 					self.gira(270,-1)
-				if (max(self.distance) < 1):
+				if (max(self.distance) < 0.8):
 					self.enderezar(1)
-			if len(self.todo) > 0:
-				self.slave.publish("1")
-				#self.chatter.say('Goal reached, its time to party')
+			self.slave.publish("1")
+			#self.chatter.say('Goal reached, its time to party')
+			self.espera(0.5)
 			self.ocupado = False
 
 	def loc(self,msg):
-		print(msg,1)
 		if (msg.data == ''):
 			self.todo = []
-			print(len(self.todo))
 		elif len(self.todo) == 0:
-			print(len(self.todo), 'lala')
 			self.todo = msg.data.split('#')
 			paredes = ''
 			self.ocupado = True
@@ -130,8 +127,8 @@ class Nodo:
 					self.gira(90,1)
 				elif accion == "Right":
 					self.gira(270,-1)
-				#if (max(self.distance) < 1):
-				#	self.enderezar(1)
+				if self.distance[1] < 0.8:
+					self.enderezar(1)
 			print('ugh')
 			self.slave.publish(paredes[:-1])
 			self.espera(0.5)
@@ -220,7 +217,7 @@ class Nodo:
 		self.espera(0.7)
 
 	def gira(self,grados,vel): 
-		objetivo = grados - 5
+		objetivo = grados
 		#zobj = objetivo/180 - 1
 		move_cmd = Twist()
 		move_cmd.angular.z = vel
@@ -328,15 +325,15 @@ class Nodo:
 	def identificaPared(self):
 		print(self.distance)
 		#if self.center and (self.left or self.right):
-		if self.distance[1] < 0.6:		
-			self.enderezar(1)
-			print('Aca hay pared')
-			#self.chatter.say('Objective found')
-			val = True
-		else:
-			#self.chatter.say('Objective lost')
+		if self.distance[1] > 0.9:		
 			print('Pasillo')
+			#self.chatter.say('Objective found')
 			val = False
+		else:
+			self.enderezar(1)
+			#self.chatter.say('Objective lost')
+			print('Pared')
+			val = True
 		rospy.sleep(1)
 		return val
 				

@@ -147,7 +147,9 @@ class Master:
 			remove = []
 			for choice in range(len(self.current)):
 				if self.current[choice][1] != self.walls:
-					del self.current[choice]
+					remove.append(choice)
+			while len(remove) > 0:
+				self.current.pop(remove.pop(-1))
 			##Hacemos que haga una accion y se repite el codigo
 			if len(self.current) < 1:
 				break
@@ -160,19 +162,19 @@ class Master:
 			msg += 'Go'
 			print('Parece que estoy en:')
 			for estado in self.current:
-				print(estado[0])
+				print(estado)
+			if len(self.current) == 1:
+				return [self.current[0][0]]
 			self.current = self.actualizarEstados(msg)
+			print('Parece que estare en:')
+			for estado in self.current:
+				print(estado)
 			self.walls = []
 			print(msg,self.done)
 			while not self.done and not rospy.is_shutdown():
 				self.go.publish(msg)
-				print(msg, self.done)
 			self.done = False
 			print(len(self.current), con)
-		if len(self.current) == 0:
-			return [[1,1,'u'],[]]
-		else:
-			return [self.current[0][0],[]]
 			self.go.publish('')
 
 	def actualizarEstados(self,instruccion):
@@ -182,25 +184,25 @@ class Master:
 			for message in instruccion.split('#'):
 				if message == 'Go':
 					if aux[0][2] == 'u':
-						newX = aux[0][0]
-						newY = aux[0][1] + 1
+						newX = aux[0][1]
+						newY = aux[0][0] + 1
 						print(newX, newY)
-						new.append([[newX,newY,'u']]+shiftByn(self.maze[newX][newY],0))
+						new.append([[newY,newX,'u']]+[shiftByn(self.maze[newY][newX],0)])
 					elif aux[0][2] == 'l':
-						newX = aux[0][0] - 1
-						newY = aux[0][1]
+						newX = aux[0][1] - 1
+						newY = aux[0][0]
 						print(newX, newY)
-						new.append([[newX,newY,'l']]+shiftByn(self.maze[newX][newY],1))
+						new.append([[newY,newX,'l']]+[shiftByn(self.maze[newY][newX],1)])
 					elif aux[0][2] == 'd':
-						newX = aux[0][0]
-						newY = aux[0][1] - 1
+						newX = aux[0][1]
+						newY = aux[0][0] - 1
 						print(newX, newY)
-						new.append([[newX,newY,'d']]+shiftByn(self.maze[newX][newY],2))
+						new.append([[newY,newX,'d']]+[shiftByn(self.maze[newY][newX],2)])
 					elif aux[0][2] == 'r':
-						newX = aux[0][0] + 1 #me tiro un error fuera de indice (4,0)
-						newY = aux[0][1]
+						newX = aux[0][1] + 1 #me tiro un error fuera de indice (4,0)
+						newY = aux[0][0]
 						print(newX, newY)
-						new.append([[newX,newY,'u']]+shiftByn(self.maze[newX][newY],3))
+						new.append([[newY,newX,'r']]+[shiftByn(self.maze[newY][newX],3)])
 				else:
 					if aux[0][2] == 'u':
 						aux[0][2] = 'l'
@@ -216,6 +218,7 @@ if __name__ == "__main__":
 	mas = Master()
 	start = mas.localize()
 	mas.start = start
+	print(start)
 	print('ME ENCONTRE, ESTE ES EL TALADRO QUE PERFORARA EL LABERINTO, QUIEN COGNO OS CREEIS QUE SOY')
 	mens = mas.makePath()
 	while not rospy.is_shutdown() and not mas.done:
