@@ -3,16 +3,17 @@ import rospy
 
 from std_msgs.msg import String
 
+def shiftByn(lista,n): 
+		return lista[n::]+lista[:n:]
+
+'''
+Movi shiftByn hacia fuera de la clase, porque no depende
+directamente de la clase y porque me tiraba el error de que no estaba definido.
+Si lo queremos meter a la clase hay que agregarle un self en los parametros y
+cambiar la llamada a self.shiftByn
+'''
+
 class Master:
-	def prettyMaze(self,x,y,uglyMaze):
-		prettyMaze = []
-		for i in range(x):
-			col = []
-			for j in range(y):
-				data = uglyMaze[i*y+j][2:]
-				col.append(data)
-			prettyMaze.append(col)
-		return prettyMaze
 
 	def loadWorld(self,filename):
 		archivo = open(filename)
@@ -20,11 +21,10 @@ class Master:
 		y,x = datos[0].split(' ')
 		x = int(x)
 		y = int(y)
-		maze = []
-		for i in range(x):
-			for j in range(y):
-				celda = datos[i*y+j+1].split(' ')
-				maze.append(celda)
+		maze = [[None for i in range(x)] for j in range(y)]
+		for i in range(x*y):
+				celda = datos[i+1].split(' ')
+				maze[int(celda[1])][int(celda[0])] = celda[2:]
 		nStart = int(datos[x*y+2])
 		starts = []
 		for i in range(nStart):
@@ -89,38 +89,138 @@ class Master:
 		print(msg.data)
 		if msg.data == '1':
 			self.done = True
+		else:
+			self.walls = msg.data.split('#')
 
 	def __init__(self):
-		dimX, dimY, maze, initial, objective, depth = self.loadWorld('c.txt')
-		awesomeMaze = self.prettyMaze(dimX, dimY, maze)
+		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('laberintos/c.txt')
 		self.X = dimX
 		self.Y = dimY
-		self.maze = awesomeMaze
-		for celda in awesomeMaze:
+		print("Celdas")
+		for celda in self.maze:
 			print(celda)
 		self.start = initial
 		self.objective = objective
 		self.depth = depth
-		self.camino = self.findPath(awesomeMaze,initial,objective,depth)
-		self.done = False
+		self.camino = []
 		for path in self.camino:
-			print path
-			
+			print(path)
+		
+		self.walls = []
+		self.done = False
+		self.current = []
+		self.idMsg = 0
 
 		rospy.init_node('brain',anonymous=True)
 		self.go = rospy.Publisher('todo',String)
+		self.loc = rospy.Publisher('find',String)
 		rospy.Subscriber('done',String,self.escucha)
 
 	def makePath(self):
+		self.camino = self.findPath(self.maze,self.start,self.objective,self.depth)
+		for path in self.camino:
+			print(path)			
 		ans = ""
 		for paso in self.camino:
 			ans += paso+"#"
 		return ans[:-1]
 
+	
+	def localize(self):
+		##Primero se buscan todos los estados en los que podria estar
+		for x in range(len(self.maze)):#la variable 'awesomeMaze' tiraba error de que no estaba definido
+			for y in range(len(self.maze[x])):#la cambie por self.maze definida en el init
+				self.current.append([[y,x,'u']]+[shiftByn(self.maze[y][x],0)])
+				self.current.append([[y,x,'l']]+[shiftByn(self.maze[y][x],1)])
+				self.current.append([[y,x,'d']]+[shiftByn(self.maze[y][x],2)])
+				self.current.append([[y,x,'r']]+[shiftByn(self.maze[y][x],3)])
+		##Lo hacemos girar y que vea las murallas que lo rodean
+		while len(self.current) > 1 and (not rospy.is_shutdown()):
+			con = 0
+			while len(self.walls) < 4:
+				self.loc.publish('Left#Left#Left#Left')
+			self.loc.publish('')
+			self.done = False
+			print(self.walls)
+			##Quitamos los estados que no tengan esas murallas
+			remove = []
+			for choice in range(len(self.current)):
+				if self.current[choice][1] != self.walls:
+					remove.append(choice)
+			while len(remove) > 0:
+				aux = remove.pop()
+				self.current.pop(aux)
+			##Hacemos que haga una accion y se repite el codigo
+			if len(self.current) < 1:
+				break
+			msg = ''
+			for pared in self.walls:
+				if pared == '1':
+					msg += 'Left#'
+				else:
+					break
+			msg += 'Go'
+			print('Parece que estoy en:')
+			for estado in self.current:
+				print(estado[0])
+			self.current = self.actualizarEstados(msg)
+			self.walls = []
+			print(msg,self.done)
+			while not self.done and not rospy.is_shutdown():
+				self.go.publish(msg)
+				print(msg, self.done)
+			self.done = False
+			print(len(self.current), con)
+		if len(self.current) == 0:
+			return [[1,1,'u'],[]]
+		else:
+			return [self.current[0][0],[]]
+			self.go.publish('')
+		print('aqui')
+
+	def actualizarEstados(self,instruccion):
+		new = []
+		for estado in self.current:
+			aux = estado
+			for message in instruccion.split('#'):
+				if message == 'Go':
+					if aux[0][2] == 'u':
+						newX = aux[0][0]
+						newY = aux[0][1] + 1
+						print(newX, newY)
+						new.append([[newX,newY,'u']]+shiftByn(self.maze[newX][newY],0))
+					elif aux[0][2] == 'l':
+						newX = aux[0][0] - 1
+						newY = aux[0][1]
+						print(newX, newY)
+						new.append([[newX,newY,'l']]+shiftByn(self.maze[newX][newY],1))
+					elif aux[0][2] == 'd':
+						newX = aux[0][0]
+						newY = aux[0][1] - 1
+						print(newX, newY)
+						new.append([[newX,newY,'d']]+shiftByn(self.maze[newX][newY],2))
+					elif aux[0][2] == 'r':
+						newX = aux[0][0] + 1 #me tiro un error fuera de indice (4,0)
+						newY = aux[0][1] 
+						print(newX, newY)
+						new.append([[newX,newY,'u']]+shiftByn(self.maze[newX][newY],3))
+				else:
+					if aux[0][2] == 'u':
+						aux[0][2] = 'l'
+					elif aux[0][2] == 'l':
+						aux[0][2] == 'd'
+					elif aux[0][2] == 'd':
+						aux[0][2] == 'r'
+					elif aux[0][2] == 'r':
+						aux[0][2] == 'u'
+		return new
+
 if __name__ == "__main__":
 	mas = Master()
+	start = mas.localize()
+	mas.start = start
+	print('ME ENCONTRE, ESTE ES EL TALADRO QUE PERFORARA EL LABERINTO, QUIEN COGNO OS CREEIS QUE SOY')
 	mens = mas.makePath()
 	while not rospy.is_shutdown() and not mas.done:
 		mas.go.publish(mens)
-	print("Termine")
 	rospy.spin()
