@@ -24,7 +24,7 @@ class Master:
 		maze = [[None for i in range(x)] for j in range(y)]
 		for i in range(x*y):
 				celda = datos[i+1].split(' ')
-				maze[int(celda[1])][int(celda[0])] = celda[2:]
+				maze[int(celda[0])][int(celda[1])] = celda[2:]
 		nStart = int(datos[x*y+2])
 		starts = []
 		for i in range(nStart):
@@ -97,8 +97,8 @@ class Master:
 		self.X = dimX
 		self.Y = dimY
 		print("Celdas")
-		for celda in self.maze:
-			print(celda)
+		for celdas in self.maze:
+			print(celdas)
 		self.start = initial
 		self.objective = objective
 		self.depth = depth
