@@ -78,10 +78,13 @@ class Nodo:
 			self.todo = msg.data.split('#')
 			print self.todo
 			self.ocupado = True
+			acciones_terminadas = 0
 			for accion in self.todo:
 				self.espera(0.2)
 				print(accion)
 				if accion == "Go":
+					if self.center and self.pared:
+						break
 					self.avanza(self.largoPared,0.4)
 				elif accion == "Left":
 					self.gira(90,1)
@@ -89,7 +92,8 @@ class Nodo:
 					self.gira(270,-1)
 				if (max(self.distance) < 0.8):
 					self.enderezar(1)
-			self.slave.publish("1")
+				acciones_terminadas += 1
+			self.slave.publish(str(acciones_terminadas))
 			#self.chatter.say('Goal reached, its time to party')
 			self.espera(0.5)
 			self.ocupado = False
@@ -109,7 +113,7 @@ class Nodo:
 					paredes += '0#'
 				if accion == "Go":
 					self.avanza(self.largoPared,0.4)
-					print('dene')
+					print('dine')
 				elif accion == "Left":
 					self.gira(90,1)
 				elif accion == "Right":
