@@ -87,8 +87,10 @@ class Master:
 
 	def escucha(self,msg):
 		print(msg.data)
-		if msg.data == '1':
+		if msg.data == 'done':
 			self.done = True
+		elif len(msg.data) == 1:
+			self.ins = int(msg.data)
 		else:
 			self.walls = msg.data.split('#')
 
@@ -107,6 +109,8 @@ class Master:
 		self.done = False
 		self.current = []
 		self.idMsg = 0
+		self.emptyMaze = [[0 for i in range(dimX)] for j in range(dimY)]
+		self.what = -1
 
 		rospy.init_node('brain', anonymous=True)
 		self.go = rospy.Publisher('todo', String)
@@ -124,8 +128,8 @@ class Master:
 				self.current.append([[y, x, 'd']] + [shiftByn(self.maze[y][x], 2)])
 				self.current.append([[y, x, 'r']] + [shiftByn(self.maze[y][x], 3)])
 
-	def makePath(self):
-		self.camino = self.findPath(self.maze,self.start,self.objective,self.depth, False)
+	def makePath(self,maze):
+		self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
 		print("Camino")
 		for path in self.camino:
 			print(path)
@@ -227,13 +231,84 @@ class Master:
 						aux[0][2] = 'u'
 		return new
 
+	def newState(self, state, action):
+		where = state[2]
+		y = state[0]
+		x = state[1]
+		if action == 'Right':
+			if where == 'u':
+				where = 'r'
+			elif where == 'r':
+				where == 'd'
+			elif where == 'd':
+				where = 'l'
+			elif where == 'l':
+				where = 'u'
+		elif action == 'Left':
+			if where == 'u':
+				where = 'l'
+			elif where == 'l':
+				where == 'd'
+			elif where == 'd':
+				where = 'r'
+			elif where == 'r':
+				where = 'u'
+		elif action == 'Go':
+			if where == 'u':
+				y = y + 1
+			elif where == 'r':
+				x = x + 1
+			elif where == 'd':
+				y = y - 1
+			elif where == 'l':
+				x = x - 1
+		return [y,x,where]
+
+	def manyStates(self, state, actions):
+		for action in actions:
+			state = self.newSate(state,action)
+		return state
+
+	def modifyMap(self, maze, state):
+		y = state[0]
+		x = state[1]
+		where = state[2]
+		if where == 'u':
+			maze[y][x][0] = 1
+		elif where == 'l':
+			maze[y][x][1] = 1
+		elif where == 'd':
+			maze[y][x][2] = 1
+		elif where == 'r':
+			maze[y][x][3] = 1
+		return maze
+
+	def explore(self):
+		initial = self.initial
+		done = False
+		while not done:
+			mens = self.makePath(self.emptyMaze)
+			while not rospy.is_shutdown() and self.what < 0:
+				self.go.publish(mens)
+			actions = mens.split('#')
+			self.go.publish('')
+			if (len(actions) == self.what):
+				done = True
+				break
+			hechos = []
+			for i in range(self.what):
+				hechos.append(actions.pop())
+			[self.initial] = self.manyStates(self.initial[0], hechos)
+			self.emptyMaze = self.modifyMap(self.emptyMaze, self.initial[0])
+			self.what = -1
+
 if __name__ == "__main__":
 	mas = Master()
 	start = mas.localize()
 	mas.start = start
 	print(start)
 	print('ME ENCONTRE, ESTE ES EL TALADRO QUE PERFORARA EL LABERINTO, QUIEN COGNO OS CREEIS QUE SOY')
-	mens = mas.makePath()
+	mens = mas.makePath(mas.maze)
 	while not rospy.is_shutdown() and not mas.done:
 		mas.go.publish(mens)
 	rospy.spin()
