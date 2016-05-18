@@ -136,6 +136,7 @@ class Master:
 
 	def localize(self):
 		##Lo hacemos girar y que vea las murallas que lo rodean
+		primerIntento = True
 		while len(self.current) > 1 and (not rospy.is_shutdown()):
 			con = 0
 			while len(self.walls) < 4:
@@ -145,14 +146,26 @@ class Master:
 			print(self.walls)
 			##Quitamos los estados que no tengan esas murallas
 			remove = []
+			currentBackup = [] + self.current;
 			for choice in range(len(self.current)):
 				if self.current[choice][1] != self.walls:
 					remove.append(choice)
 			while len(remove) > 0:
 				self.current.pop(remove.pop(-1))
 			##Hacemos que haga una accion y se repite el codigo
+			## Hacemos mas de un intento para asegurarnos que no hay solucion
 			if len(self.current) < 1:
-				break
+				if primerIntento:
+					print 'Primer intento'
+					primerIntento = False
+					self.current = currentBackup
+					self.walls = []
+					continue
+				else:
+					print 'Segundo intento'
+					break
+			else:
+				primerIntento = True
 			msg = ''
 			for pared in self.walls:
 				if pared == '1':

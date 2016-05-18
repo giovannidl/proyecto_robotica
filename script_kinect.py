@@ -108,6 +108,15 @@ class Turtlebot_Kinect(object):
             middle = depth[238+i]
             up = depth[98+i]
             down = depth[378+i]
+            aux.append(middle[240:270])
+            #aux.append(up[180:380])
+            aux.append(down[240:270])
+        num_cent_izq = self.superMaxi(aux)
+        aux = []
+        for i in range(5):
+            middle = depth[238+i]
+            up = depth[98+i]
+            down = depth[378+i]
             aux.append(middle[300:340])
             #aux.append(up[180:380])
             aux.append(down[300:340])
@@ -117,9 +126,18 @@ class Turtlebot_Kinect(object):
             middle = depth[238+i]
             up = depth[98+i]
             down = depth[378+i]
-            aux.append(middle[360:560])
-            aux.append(up[360:560])
-            aux.append(down[360:560])
+            aux.append(middle[370:400])
+            #aux.append(up[180:380])
+            aux.append(down[370:400])
+        num_cent_der = self.superMaxi(aux)
+        aux = []
+        for i in range(5):
+            middle = depth[238+i]
+            up = depth[98+i]
+            down = depth[378+i]
+            aux.append(middle[430:560])
+            aux.append(up[430:560])
+            aux.append(down[430:560])
         num_der = self.superMaxi(aux)
         '''
         obs_cen = num_cent < 0.4 or num_cent > 90
@@ -134,7 +152,7 @@ class Turtlebot_Kinect(object):
             res = "01"
         res += str(int(100*min(num_cent, num_izq, num_der)))
         '''
-        aux = str(num_izq) + ':' + str(num_cent) + ':' + str(num_der)
+        aux = str(num_izq) + ':' + str(num_cent) + ':' + str(num_der) + ':' + str(num_cent_izq) + ':' + str(num_cent_der)
         return aux
 
     def maxi(self,lista):
