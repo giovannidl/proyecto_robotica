@@ -41,15 +41,7 @@ class Nodo:
 
 	def obstaculo(self,msj):
 		self.distance = map(float,msj.data.split(':'))
-		
-		'''
-		if self.distance[0] < 0.6 or self.distance[0] > 90:
-			self.stackDistance[0] = min(self.stackDistance[0] + 1, MAX_DISTANCE)
-			self.left = not self.stackDistance[0] == MAX_DISTANCE
-		else:
-			self.stackDistance[0] = max(self.stackDistance[0] - 1, 0)
-			self.left = not self.stackDistance[0] == 0
-		'''
+
 		self.left = self.distance[0] < 0.6 or self.distance[0] > 90
 
 		if self.distance[1] < 0.6 or self.distance[1] > 90:
@@ -59,15 +51,10 @@ class Nodo:
 			self.stackDistance[1] = max(self.stackDistance[1] - 1, 0)
 			self.center = not self.stackDistance[1] == 0
 
-		'''
-		if self.distance[2] < 0.6 or self.distance[2] > 90:
-			self.stackDistance[2] = min(self.stackDistance[2] + 1, MAX_DISTANCE)
-			self.right = not self.stackDistance[2] == MAX_DISTANCE
-		else:
-			self.stackDistance[2] = max(self.stackDistance[2] - 1, 0)
-			self.right = not self.stackDistance[2] == 0
-		'''
 		self.right = self.distance[2] < 0.6 or self.distance[2] > 90
+
+		if max(abs(self.distance[3] - self.distance[1]), abs(self.distance[4] - self.distance[1])) > 0.1:
+			self.pared = True
 
 	def enderezame(self,data):
 		self.distsPared = data.data.split(';')
@@ -159,10 +146,11 @@ class Nodo:
 		self.ocupado = False
 		self.largoPared = 0.8
 		self.todo = []
+		self.pared = False
 
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
-   		rospy.Subscriber('odom',Odometry,self.odometryCb)
+		rospy.Subscriber('odom',Odometry,self.odometryCb)
 		rospy.Subscriber('obstaculo',String,self.obstaculo)
 		rospy.Subscriber('enderezador3',String,self.enderezame)
 		rospy.Subscriber('todo',String,self.solve)
@@ -325,15 +313,15 @@ class Nodo:
 	def identificaPared(self):
 		print(self.distance)
 		#if self.center and (self.left or self.right):
-		if self.distance[1] > 0.9:		
+		if self.distance[1] < 0.9 and self.pared:
+			self.enderezar(1)
+			# self.chatter.say('Objective lost')
+			print('Pared')
+			val = True
+		else:
 			print('Pasillo')
 			#self.chatter.say('Objective found')
 			val = False
-		else:
-			self.enderezar(1)
-			#self.chatter.say('Objective lost')
-			print('Pared')
-			val = True
 		rospy.sleep(1)
 		return val
 				
