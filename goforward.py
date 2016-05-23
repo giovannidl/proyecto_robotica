@@ -53,8 +53,10 @@ class Nodo:
 
 		self.right = self.distance[2] < 0.6 or self.distance[2] > 90
 
-		if max(abs(self.distance[3] - self.distance[1]), abs(self.distance[4] - self.distance[1])) > 0.1:
+		if min(abs(self.distance[3] - self.distance[1]), abs(self.distance[4] - self.distance[1])) < 0.1:
 			self.pared = True
+		else:
+			self.pared = False
 
 	def enderezame(self,data):
 		self.distsPared = data.data.split(';')
@@ -83,7 +85,7 @@ class Nodo:
 				self.espera(0.2)
 				print(accion)
 				if accion == "Go":
-					if self.center and self.pared:
+					if self.distance[1] < 0.6: #and self.pared:
 						break
 					self.avanza(self.largoPared,0.4)
 				elif accion == "Left":

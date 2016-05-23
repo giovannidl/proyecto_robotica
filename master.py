@@ -41,26 +41,27 @@ class Master:
 		ans = []
 		y,x,direction = state[0]
 		moves = state[1]
-		if direction == 'u':
-			ans.append([[y,x,'r'],moves+['Right']])
-			ans.append([[y,x,'l'],moves+['Left']])
-			if maze[y][x][0] == '0' and (y < self.Y):
-				ans.append([[y+1,x,direction],moves+['Go']])
-		elif direction == 'l':
-			ans.append([[y,x,'u'],moves+['Right']])
-			ans.append([[y,x,'d'],moves+['Left']])
-			if maze[y][x][1] == '0' and (x > 0):
-				ans.append([[y,x-1,direction],moves+['Go']])
-		elif direction == 'd':
-			ans.append([[y,x,'l'],moves+['Right']])
-			ans.append([[y,x,'r'],moves+['Left']])
-			if maze[y][x][2] == '0' and (y > 0):
-				ans.append([[y-1,x,direction],moves+['Go']])
-		else:
-			ans.append([[y,x,'d'],moves+['Right']])
-			ans.append([[y,x,'u'],moves+['Left']])
-			if maze[y][x][3] == '0' and (x < self.X):
-				ans.append([[y,x+1,direction],moves+['Go']])
+		if (y >= 0 and y < self.Y and x >= 0 and x < self.X):
+			if direction == 'u':
+				ans.append([[y,x,'r'],moves+['Right']])
+				ans.append([[y,x,'l'],moves+['Left']])
+				if maze[y][x][0] == '0' and (y < self.Y):
+					ans.append([[y+1,x,direction],moves+['Go']])
+			elif direction == 'l':
+				ans.append([[y,x,'u'],moves+['Right']])
+				ans.append([[y,x,'d'],moves+['Left']])
+				if maze[y][x][1] == '0' and (x > 0):
+					ans.append([[y,x-1,direction],moves+['Go']])
+			elif direction == 'd':
+				ans.append([[y,x,'l'],moves+['Right']])
+				ans.append([[y,x,'r'],moves+['Left']])
+				if maze[y][x][2] == '0' and (y > 0):
+					ans.append([[y-1,x,direction],moves+['Go']])
+			else:
+				ans.append([[y,x,'d'],moves+['Right']])
+				ans.append([[y,x,'u'],moves+['Left']])
+				if maze[y][x][3] == '0' and (x < self.X):
+					ans.append([[y,x+1,direction],moves+['Go']])
 		return ans
 
 	def findPath(self,maze,start,finish,depth,set_print):
@@ -81,16 +82,15 @@ class Master:
 					for neighbour in pos:
 						if neighbour[0] not in visited:
 							next.append(neighbour)
-					if set_print:
-						print(visited)
+					#if set_print:
+					#	print(visited)
 		return actual[1]
 
 	def escucha(self,msg):
-		print(msg.data)
 		if msg.data == 'done':
 			self.done = True
 		elif len(msg.data) == 1:
-			self.ins = int(msg.data)
+			self.what = int(msg.data)
 		else:
 			self.walls = msg.data.split('#')
 
@@ -98,9 +98,9 @@ class Master:
 		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('laberintos/c.txt')
 		self.X = dimX
 		self.Y = dimY
-		print("Celdas")
-		for celdas in self.maze:
-			print(celdas)
+#		print("Celdas")
+#		for celdas in self.maze:
+#			print(celdas)
 		self.start = initial
 		self.objective = objective
 		self.depth = depth
@@ -109,7 +109,7 @@ class Master:
 		self.done = False
 		self.current = []
 		self.idMsg = 0
-		self.emptyMaze = [[0 for i in range(dimX)] for j in range(dimY)]
+		self.emptyMaze = [[['0','0','0','0'] for i in range(dimX)] for j in range(dimY)]
 		self.what = -1
 
 		rospy.init_node('brain', anonymous=True)
@@ -130,9 +130,10 @@ class Master:
 
 	def makePath(self,maze):
 		self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
-		print("Camino")
-		for path in self.camino:
-			print(path)
+		print(self.start)
+		#print("Camino")
+		#for path in self.camino:
+		#	print(path)
 		ans = ""
 		for paso in self.camino:
 			ans += paso+"#"
@@ -239,7 +240,7 @@ class Master:
 			if where == 'u':
 				where = 'r'
 			elif where == 'r':
-				where == 'd'
+				where = 'd'
 			elif where == 'd':
 				where = 'l'
 			elif where == 'l':
@@ -248,7 +249,7 @@ class Master:
 			if where == 'u':
 				where = 'l'
 			elif where == 'l':
-				where == 'd'
+				where = 'd'
 			elif where == 'd':
 				where = 'r'
 			elif where == 'r':
@@ -266,7 +267,7 @@ class Master:
 
 	def manyStates(self, state, actions):
 		for action in actions:
-			state = self.newSate(state,action)
+			state = self.newState(state,action)
 		return state
 
 	def modifyMap(self, maze, state):
@@ -284,10 +285,13 @@ class Master:
 		return maze
 
 	def explore(self):
-		initial = self.initial
+		initial = self.start
 		done = False
 		while not done:
+			print(self.start[0])
 			mens = self.makePath(self.emptyMaze)
+			if len(mens) == 0:
+				break
 			while not rospy.is_shutdown() and self.what < 0:
 				self.go.publish(mens)
 			actions = mens.split('#')
@@ -297,18 +301,20 @@ class Master:
 				break
 			hechos = []
 			for i in range(self.what):
-				hechos.append(actions.pop())
-			[self.initial] = self.manyStates(self.initial[0], hechos)
-			self.emptyMaze = self.modifyMap(self.emptyMaze, self.initial[0])
+				hechos.append(actions.pop(0))
+			aux = self.manyStates(self.start[0], hechos)
+			self.start = [aux]
+			self.emptyMaze = self.modifyMap(self.emptyMaze, self.start[0])
 			self.what = -1
 
 if __name__ == "__main__":
 	mas = Master()
-	start = mas.localize()
-	mas.start = start
-	print(start)
-	print('ME ENCONTRE, ESTE ES EL TALADRO QUE PERFORARA EL LABERINTO, QUIEN COGNO OS CREEIS QUE SOY')
-	mens = mas.makePath(mas.maze)
-	while not rospy.is_shutdown() and not mas.done:
-		mas.go.publish(mens)
+	mas.explore()
+#	start = mas.localize()
+#	mas.start = start
+#	print(start)
+#	print('ME ENCONTRE, ESTE ES EL TALADRO QUE PERFORARA EL LABERINTO, QUIEN COGNO OS CREEIS QUE SOY')
+#	mens = mas.makePath(mas.maze)
+#	while not rospy.is_shutdown() and not mas.done:
+#		mas.go.publish(mens)
 	rospy.spin()
