@@ -287,7 +287,7 @@ class Master:
 	def explore(self):
 		initial = self.start
 		done = False
-		while not done:
+		while not done and not rospy.is_shutdown():
 			print(self.start[0])
 			mens = self.makePath(self.emptyMaze)
 			if len(mens) == 0:

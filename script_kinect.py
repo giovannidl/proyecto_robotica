@@ -110,7 +110,7 @@ class Turtlebot_Kinect(object):
             down = depth[378+i]
             aux.append(middle[240:270])
             #aux.append(up[180:380])
-            aux.append(down[240:270])
+            #aux.append(down[240:270])
         num_cent_izq = self.superMaxi(aux)
         aux = []
         for i in range(5):
@@ -119,16 +119,16 @@ class Turtlebot_Kinect(object):
             down = depth[378+i]
             aux.append(middle[300:340])
             #aux.append(up[180:380])
-            aux.append(down[300:340])
+            #aux.append(down[300:340])
         num_cent = self.superMaxi(aux)
         aux = []
         for i in range(5):
             middle = depth[238+i]
             up = depth[98+i]
             down = depth[378+i]
-            aux.append(middle[370:400])
+            aux.append(middle[350:420])
             #aux.append(up[180:380])
-            aux.append(down[370:400])
+            #aux.append(down[370:400])
         num_cent_der = self.superMaxi(aux)
         aux = []
         for i in range(5):

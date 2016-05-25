@@ -12,6 +12,7 @@ from sound_play.msg import SoundRequest
 from sound_play.libsoundplay import SoundClient
 
 MAX_DISTANCE = 3
+WALL_DISTANCE = 0.6
 
 class Nodo:	
 	def espera(self,seg):
@@ -53,7 +54,8 @@ class Nodo:
 
 		self.right = self.distance[2] < 0.6 or self.distance[2] > 90
 
-		if min(abs(self.distance[3] - self.distance[1]), abs(self.distance[4] - self.distance[1])) < 0.1:
+		self.auxPared =  max(abs(self.distance[3] - self.distance[1]), abs(self.distance[4] - self.distance[1]))
+		if self.distance[3] < WALL_DISTANCE and self.distance[4] < WALL_DISTANCE and self.auxPared < 0.03 and self.auxPared > 0:
 			self.pared = True
 		else:
 			self.pared = False
@@ -84,8 +86,9 @@ class Nodo:
 			for accion in self.todo:
 				self.espera(0.2)
 				print(accion)
+				print('Solve Center: ' + str(self.distance[1]) + ' Pared: ' + str(self.pared) + ' DisPared: ' + str(self.auxPared))
 				if accion == "Go":
-					if self.distance[1] < 0.6: #and self.pared:
+					if self.distance[1] < WALL_DISTANCE: # and self.pared:
 						break
 					self.avanza(self.largoPared,0.4)
 				elif accion == "Left":
@@ -153,6 +156,7 @@ class Nodo:
 		self.largoPared = 0.8
 		self.todo = []
 		self.pared = False
+		self.auxPared = 0
 
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
@@ -181,10 +185,10 @@ class Nodo:
 			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
 			if not self.center and (abs(recorrido) < metros*(1-self.cl) * 0.9):
 				cont = min(cont + 0.05, 1)
-				print('acelero')
+				#print('acelero')
 			else:
 				cont = max(cont - 0.05, 0.1)
-				print('freno')
+				#print('freno')
 
 			#if (self.distance[0]) > 0.5:
 			if self.right and not self.left:
@@ -201,7 +205,7 @@ class Nodo:
 			move_cmd.linear.x = vel_max * cont
 			#print(vel_max * cont)
 			if (self.distance[1] < 0.5 and self.distance[1] != 0.0):
-				print(self.distance[1])
+				#print(self.distance[1])
 				break
 		while (not rospy.is_shutdown()) and self.distance[1] < 0.1:
 			move_cmd.linear.x = -0.1
@@ -319,6 +323,7 @@ class Nodo:
 	def identificaPared(self):
 		print(self.distance)
 		#if self.center and (self.left or self.right):
+		print('Identifica' + str(self.pared))
 		if self.distance[1] < 0.9 and self.pared:
 			self.enderezar(1)
 			# self.chatter.say('Objective lost')
