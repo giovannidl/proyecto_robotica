@@ -93,7 +93,7 @@ class Master:
 			self.walls = msg.data.split('#')
 
 	def __init__(self):
-		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('laberintos/c.txt')
+		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('../laberintos/c.txt')
 		self.X = dimX
 		self.Y = dimY
 		print("Celdas")

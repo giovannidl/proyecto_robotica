@@ -91,7 +91,7 @@ class Master:
 			self.done = True
 
 	def __init__(self):
-		dimX, dimY, maze, initial, objective, depth = self.loadWorld('c.txt')
+		dimX, dimY, maze, initial, objective, depth = self.loadWorld('../laberintos/c.txt')
 		awesomeMaze = self.prettyMaze(dimX, dimY, maze)
 		self.X = dimX
 		self.Y = dimY
