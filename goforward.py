@@ -130,6 +130,10 @@ class Nodo:
 			self.espera(0.5)
 			self.ocupado = False
 
+	def cosas(self, data):
+		self.items = data.data.split(':')
+		print(self.items)
+
 	def __init__(self):
 		#Aca se definen variables utiles
 		self.posx = 0
@@ -157,6 +161,7 @@ class Nodo:
 		self.todo = []
 		self.pared = False
 		self.auxPared = 0
+		self.items = [False,False,False]
 
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
@@ -165,6 +170,7 @@ class Nodo:
 		rospy.Subscriber('enderezador3',String,self.enderezame)
 		rospy.Subscriber('todo',String,self.solve)
 		rospy.Subscriber('find',String,self.loc)
+		rospy.Subscriber('watchRoboto',String,self.cosas)
 		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
 		self.slave = rospy.Publisher('done',String)					
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
@@ -341,10 +347,24 @@ class Nodo:
 			self.identificaPared()
 			self.gira2(90,1)
 
+	def yell(self):
+		self.chatter.stopAll()
+		if self.items[0] == '1':
+			self.chatter.say('AverageMan ready to kill')
+		elif self.items[1] == '1':
+			self.chatter.say('One step closer to murder')
+		elif self.items[2] == '1':
+			self.chatter.say('Killing spree is ours')
+		else:
+			self.chatter.say('Boring')
 
 if __name__ == "__main__":
 	roboto = Nodo()
 	rospy.sleep(1)
-	roboto.chatter.stopAll()	
-	rospy.sleep(1)
+	for i in range(4):
+		roboto.gira(90,1)
+		roboto.enderezar(1)
+		#rospy.sleep(1)
+		roboto.yell()
+		rospy.sleep(1)
 	rospy.spin()

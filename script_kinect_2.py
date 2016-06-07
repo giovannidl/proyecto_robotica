@@ -7,12 +7,18 @@ import numpy
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 
+from matplotlib import pyplot as plt
+
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
-face = cv2.imread('Lab6_imagenes/averageman.jpg')
-key = cv2.imread('Lab6_imagenes/llave.jpg')
-door = cv2.imread('Lab6_imagenes/puerta.jpg')
+face = cv2.imread('Lab6_imagenes/averageman.jpg',cv2.IMREAD_GRAYSCALE)
+key = cv2.imread('Lab6_imagenes/llave.jpg',cv2.IMREAD_GRAYSCALE)
+door = cv2.imread('Lab6_imagenes/puerta.jpg',cv2.IMREAD_GRAYSCALE)
+yLeft = cv2.imread('Lab6_imagenes/doblarIzq.jpg',cv2.IMREAD_GRAYSCALE)
+yRight = cv2.imread('Lab6_imagenes/doblarDer.jpg',cv2.IMREAD_GRAYSCALE)
+nLeft = cv2.imread('Lab6_imagenes/nodoblarIzq.jpg',cv2.IMREAD_GRAYSCALE)
+nRight = cv2.imread('Lab6_imagenes/nodoblarDer.jpg',cv2.IMREAD_GRAYSCALE)
 templates = [face, key, door]
 
 class Turtlebot_Kinect(object):
@@ -23,6 +29,7 @@ class Turtlebot_Kinect(object):
         self.obs = rospy.Publisher('obstaculo',String)
         self.amigo = rospy.Publisher('amigoFiel',String)
         self.dis2 = rospy.Publisher('enderezador3',String)
+        self.watcher = rospy.Publisher('watchRoboto',String)
         self.bridge = CvBridge()
         self.current_cv_depth_image = numpy.zeros((1,1,3))
         self.current_cv_rgb_image = numpy.zeros((1,1,3))
@@ -67,9 +74,12 @@ class Turtlebot_Kinect(object):
             imagen1 = cv2.cvtColor(self.current_cv_rgb_image, cv2.COLOR_BGR2GRAY)
             imagen = cv2.blur(imagen1,(10,10))
             #interes = cv2.inRange(imagen, self.lowGreen, self.upGreen)
-            self.reconocer(imagen1)
-            #cv2.imshow('filtro', interes)
-            #cv2.waitKey(10)
+            ans = self.reconocer(imagen1)
+            self.watcher.publish(':'.join(map(str,ans)))
+            print('Y-L',ans[3]==1,'Y-R',ans[4]==1,'N-L',ans[5]==1,'N-R',ans[6]==1)
+            '''
+            cv2.imshow('filtro', interes)
+            cv2.waitKey(10)
             contours, hierarchy = cv2.findContours(interes, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             max_area = 0
             if len(contours) != 0:
@@ -94,7 +104,7 @@ class Turtlebot_Kinect(object):
                 self.objectiveX = -1
                 self.objectiveY = -1
             
-
+            '''
         except CvBridgeError, e:
             print e
 
@@ -205,18 +215,48 @@ class Turtlebot_Kinect(object):
 
 		msj = puntoInicio+';'+puntoMedio+';'+puntoFinal
 		return msj
-    def reconocer(self, imagen):
-        print('in')
-        for temple in templates:
-            #print(temple.type())#,imagen.type())
-            #w, h = temple.shape[::-1]
-            temple = cv2.cvtColor(temple, cv2.COLOR_BGR2GRAY)
-            res = cv2.matchTemplate(imagen,temple,cv2.TM_SQDIFF_NORMED)#cv2.imread(imagen,0)??
+    def reconocer(self, imagen, n = 0):
+#        print('in')
+        ans = [0,0,0,0,0,0,0]
+        for i in range(len(templates)):
+            #print(temple.shape)#,imagen.type())
+            temple = templates[i]
+            w, h = temple.shape[::-1]
+            #temple = cv2.cvtColor(temple, cv2.COLOR_BGR2GRAY)
+            res = cv2.matchTemplate(imagen,temple,cv2.TM_SQDIFF)#cv2.imread(imagen,0)??
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-            top_left = min_loc
-            #bottom_right = (top_left[0] + w, top_left[1] + h)
-            #cv2.rectangle(imagen, top_left, bottom_right, (50, 0, 130), 2)
-            #cv2.imshow('output',i)
+            '''
+            if (i == 5):
+                top_left = min_loc
+                bottom_right = (top_left[0] + w, top_left[1] + h)
+                cv2.rectangle(imagen,top_left, bottom_right, (255,0,0) , 2)
+                cv2.imshow('blarg',imagen)
+                cv2.waitKey(10)
+                print(min_val)
+            '''
+            if (i == 0 and min_val < 380000000):
+                ans[0] =  1
+            elif (i == 1 and min_val < 400000000):
+                ans[1] = 1
+            elif (i == 2 and min_val < 330000000):
+                ans[2] = 1
+            '''
+            elif (i == 3 and min_val < 280000000):
+                ans[3] = 1
+            elif (i == 4 and min_val < 250000000):
+                ans[4] = 1
+            elif (i == 5 and min_val < 250000000):
+                ans[5] = 1
+            elif (i == 6 and min_val < 250000000):
+                ans[6] = 1
+            '''
+        if (sum(ans) > 1 and n < 10):
+            ans = self.reconocer(imagen, n+1)
+            #elif (i == 0):
+            #    print('AverageMan',min_val, min_loc)
+            #else:
+            #    print('Puerta',min_val, min_loc)
+        return ans
 
 if __name__ == '__main__':
     rospy.init_node("test_move_action_client")
