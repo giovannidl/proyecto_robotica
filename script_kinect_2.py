@@ -76,7 +76,7 @@ class Turtlebot_Kinect(object):
             #interes = cv2.inRange(imagen, self.lowGreen, self.upGreen)
             ans = self.reconocer(imagen1)
             self.watcher.publish(':'.join(map(str,ans)))
-            print('Y-L',ans[3]==1,'Y-R',ans[4]==1,'N-L',ans[5]==1,'N-R',ans[6]==1)
+            #print('Y-L',ans[3]==1,'Y-R',ans[4]==1,'N-L',ans[5]==1,'N-R',ans[6]==1)
             '''
             cv2.imshow('filtro', interes)
             cv2.waitKey(10)
@@ -226,7 +226,7 @@ class Turtlebot_Kinect(object):
             res = cv2.matchTemplate(imagen,temple,cv2.TM_SQDIFF)#cv2.imread(imagen,0)??
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
             '''
-            if (i == 5):
+            if (i == 1):
                 top_left = min_loc
                 bottom_right = (top_left[0] + w, top_left[1] + h)
                 cv2.rectangle(imagen,top_left, bottom_right, (255,0,0) , 2)
@@ -235,7 +235,7 @@ class Turtlebot_Kinect(object):
                 print(min_val)
             '''
             if (i == 0 and min_val < 380000000):
-                ans[0] =  1
+                ans[0] = 1
             elif (i == 1 and min_val < 400000000):
                 ans[1] = 1
             elif (i == 2 and min_val < 330000000):
