@@ -223,7 +223,7 @@ class Turtlebot_Kinect(object):
             temple = templates[i]
             w, h = temple.shape[::-1]
             #temple = cv2.cvtColor(temple, cv2.COLOR_BGR2GRAY)
-            res = cv2.matchTemplate(imagen,temple,cv2.TM_SQDIFF)#cv2.imread(imagen,0)??
+            res = cv2.matchTemplate(imagen,temple,cv2.TM_SQDIFF)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
             '''
             if (i == 1):
