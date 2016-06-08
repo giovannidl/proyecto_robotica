@@ -126,6 +126,9 @@ class Nodo:
 				if self.distance[1] < 0.8:
 					self.enderezar(1)
 			print('ugh')
+			if self.collected():
+				self.collection.publish('True')
+				self.chatter.say('All set, annihilation incoming')
 			self.slave.publish(paredes[:-1])
 			self.espera(0.5)
 			self.ocupado = False
@@ -133,6 +136,13 @@ class Nodo:
 	def cosas(self, data):
 		self.items = data.data.split(':')
 		print(self.items)
+		for i in range(len(self.items)):
+			if self.items[i] == '1' and i == 0:
+				self.collector[0] = True
+			elif self.items[i] == '1' and i == 1:
+				self.collector[1] = True
+			elif self.items[i] == '1' and i == 2:
+				self.collector[2] = True
 
 	def __init__(self):
 		#Aca se definen variables utiles
@@ -162,6 +172,7 @@ class Nodo:
 		self.pared = False
 		self.auxPared = 0
 		self.items = [False,False,False]
+		self.collector = [False,False,False]
 
 		#Inicializar el nodo y suscribirse/publicar
 		rospy.init_node('roboto', anonymous=True) #make node 
@@ -172,7 +183,8 @@ class Nodo:
 		rospy.Subscriber('find',String,self.loc)
 		rospy.Subscriber('watchRoboto',String,self.cosas)
 		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
-		self.slave = rospy.Publisher('done',String)					
+		self.slave = rospy.Publisher('done', String)	
+		self.collection = rospy.publisher('colectabuzz', String)				
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
 		self.chatter = SoundClient()
 
@@ -334,6 +346,7 @@ class Nodo:
 			self.enderezar(1)
 			# self.chatter.say('Objective lost')
 			print('Pared')
+			self.yell()
 			val = True
 		else:
 			print('Pasillo')
@@ -358,13 +371,22 @@ class Nodo:
 		else:
 			self.chatter.say('Boring')
 
+	def collected(self):
+		aux = 0
+		for i in range(len(self.collected)):
+			if self.collected[i] == True:
+				aux += 1
+		if aux == 3:
+			return True
+		return False
+
 if __name__ == "__main__":
 	roboto = Nodo()
 	rospy.sleep(1)
-	for i in range(4):
-		roboto.gira(90,1)
-		roboto.enderezar(1)
+	#for i in range(4):
+	#	roboto.gira(90,1)
+	#	roboto.enderezar(1)
 		#rospy.sleep(1)
-		roboto.yell()
-		rospy.sleep(1)
+	#	roboto.yell()
+	#	rospy.sleep(1)
 	rospy.spin()

@@ -91,9 +91,14 @@ class Master:
 			self.done = True
 		else:
 			self.walls = msg.data.split('#')
+		
+	def collector(self,msg):
+		if msg.data == 'True':
+			self.collected = True
+			print('done')
 
 	def __init__(self):
-		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('../laberintos/c.txt')
+		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('laberintos/c.txt')
 		self.X = dimX
 		self.Y = dimY
 		print("Celdas")
@@ -107,11 +112,14 @@ class Master:
 		self.done = False
 		self.current = []
 		self.idMsg = 0
+		self.items = 0
+		self.collected = False
 
-		# rospy.init_node('brain', anonymous=True)
-		# self.go = rospy.Publisher('todo', String)
+		rospy.init_node('brain', anonymous=True)
+		self.go = rospy.Publisher('todo', String)
 		self.loc = rospy.Publisher('find', String)
-		 rospy.Subscriber('done', String, self.escucha)
+		rospy.Subscriber('done', String, self.escucha)
+		rospy.Subscriber('colectabuzz',String,self.collector)
 
 		self.init_current_localization()
 
@@ -138,9 +146,9 @@ class Master:
 		##Lo hacemos girar y que vea las murallas que lo rodean
 		while len(self.current) > 1: #and (not rospy.is_shutdown()):
 			con = 0
-			#while len(self.walls) < 4:
-			# 	self.loc.publish('Left#Left#Left#Left')
-			# self.loc.publish('')
+			while len(self.walls) < 4:
+			 	self.loc.publish('Left#Left#Left#Left')
+			self.loc.publish('')
 			self.done = False
 			print(self.walls)
 			##Quitamos los estados que no tengan esas murallas
@@ -197,7 +205,7 @@ class Master:
 						print(newX, newY)
 						new.append([[newX,newY,'d']]+shiftByn(self.maze[newX][newY],2))
 					elif aux[0][2] == 'r':
-						newX = aux[0][0] + 1 #me tiro un error fuera de indice (4,0)
+						newX = aux[0][0] + 1 
 						newY = aux[0][1]
 						print(newX, newY)
 						new.append([[newX,newY,'u']]+shiftByn(self.maze[newX][newY],3))
@@ -212,10 +220,92 @@ class Master:
 						aux[0][2] = 'u'
 		return new
 
+	def newState(self, state, action):
+		where = state[2]
+		y = state[0]
+		x = state[1]
+		if action == 'Right':
+			if where == 'u':
+				where = 'r'
+			elif where == 'r':
+				where = 'd'
+			elif where == 'd':
+				where = 'l'
+			elif where == 'l':
+				where = 'u'
+		elif action == 'Left':
+			if where == 'u':
+				where = 'l'
+			elif where == 'l':
+				where = 'd'
+			elif where == 'd':
+				where = 'r'
+			elif where == 'r':
+				where = 'u'
+		elif action == 'Go':
+			if where == 'u':
+				y = y + 1
+			elif where == 'r':
+				x = x + 1
+			elif where == 'd':
+				y = y - 1
+			elif where == 'l':
+				x = x - 1
+		return [y,x,where]
+
+	def manyStates(self, state, actions):
+		for action in actions:
+			state = self.newState(state,action)
+		return state
+
+	def modifyMap(self, maze, state):
+		y = state[0]
+		x = state[1]
+		where = state[2]
+		if where == 'u':
+			maze[y][x][0] = 1
+		elif where == 'l':
+			maze[y][x][1] = 1
+		elif where == 'd':
+			maze[y][x][2] = 1
+		elif where == 'r':
+			maze[y][x][3] = 1
+		return maze
+
+	def explore(self):
+		initial = self.start
+		done = False
+		while not done and not rospy.is_shutdown():
+			print(self.start[0])
+			mens = self.makePath(self.emptyMaze)
+			if len(mens) == 0:
+				break
+			while not rospy.is_shutdown() and self.what < 0:
+				self.go.publish(mens)
+			actions = mens.split('#')
+			self.go.publish('')
+			if (len(actions) == self.what):
+				done = True
+				break
+			hechos = []
+			for i in range(self.what):
+				hechos.append(actions.pop(0))
+			aux = self.manyStates(self.start[0], hechos)
+			self.start = [aux]
+			self.emptyMaze = self.modifyMap(self.emptyMaze, self.start[0])
+			self.what = -1
+
+	def modo_busqueda(self):
+		pass
+
 if __name__ == "__main__":
 	mas = Master()
+	mas.start = mas.localize()
+	if mas.collected is False:
+		mas.modo_busqueda()
+	mas.explore()
 	mens = mas.makePath()
-	#while not rospy.is_shutdown() and not mas.done:
-	#mas.go.publish(mens)
+	while not rospy.is_shutdown() and not mas.done:
+		mas.go.publish(mens)
 	print("Termine")
 	#rospy.spin()
