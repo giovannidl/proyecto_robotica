@@ -105,10 +105,9 @@ class Master:
 	def recolector(self,msg):
 		self.mensajes.append(msg.data)
 		self.num_acc += 1
-		print(self.mensajes)
+		print(self.mensajes,self.num_acc)
 
 	def reconocedoor(self,msg):
-		print(self.aux)
 		if msg.data == '1' and self.aux == 0:
 			self.aparicion = self.num_acc
 			self.aux += 1
@@ -268,42 +267,84 @@ class Master:
 						aux[0][2] = 'u'
 		return new
 
-	def newState(self, state, action):
+	def newState(self, state, action, inverted = False):
 		where = state[2]
 		y = state[0]
 		x = state[1]
+		if inverted is False:
+			print(999)
 		if action == 'Right':
-			if where == 'u':
-				where = 'r'
-			elif where == 'r':
-				where = 'd'
-			elif where == 'd':
-				where = 'l'
-			elif where == 'l':
-				where = 'u'
+			if inverted is False:
+				print(99)
+				if where == 'u':
+					where = 'r'
+				elif where == 'r':
+					where = 'd'
+				elif where == 'd':
+					where = 'l'
+				elif where == 'l':
+					where = 'u'
+			elif inverted is True:
+				print('true')
+				if where == 'u':
+					where = 'l'
+				elif where == 'r':
+					where = 'u'
+				elif where == 'd':
+					where = 'r'
+				elif where == 'l':
+					where = 'd'
 		elif action == 'Left':
-			if where == 'u':
-				where = 'l'
-			elif where == 'l':
-				where = 'd'
-			elif where == 'd':
-				where = 'r'
-			elif where == 'r':
-				where = 'u'
+			if inverted is False:
+				if where == 'u':
+					where = 'l'
+				elif where == 'l':
+					where = 'd'
+				elif where == 'd':
+					where = 'r'
+				elif where == 'r':
+					where = 'u'
+			elif inverted is True:
+				print('truae')
+				if where == 'u':
+					where = 'r'
+				elif where == 'l':
+					where = 'u'
+				elif where == 'd':
+					where = 'l'
+				elif where == 'r':
+					where = 'd'
 		elif action == 'Go':
-			if where == 'u':
-				y = y + 1
-			elif where == 'r':
-				x = x + 1
-			elif where == 'd':
-				y = y - 1
-			elif where == 'l':
-				x = x - 1
+			if inverted is False:
+				if where == 'u':
+					y = y + 1
+				elif where == 'r':
+					x = x + 1
+				elif where == 'd':
+					y = y - 1
+				elif where == 'l':
+					x = x - 1
+			elif inverted is True:
+				print(y,x,where,'true')
+				print(88)
+				if where == 'u':
+					y = y + 1
+				elif where == 'r':
+					x = x + 1
+				elif where == 'd':
+					y = y - 1
+				elif where == 'l':
+					x = x - 1
 		return [y,x,where]
 
-	def manyStates(self, state, actions):
-		for action in actions:
-			state = self.newState(state,action)
+	def manyStates(self, state, actions, inverted = False):
+		if inverted is False:
+			for action in actions:
+				state = self.newState(state,action)	
+		elif inverted is True:
+			print(actions,'truth has come')
+			for i in range(len(actions)):
+				state = self.newState(state,actions[i-1],True)
 		return state
 
 	def modifyMap(self, maze, state):
@@ -348,10 +389,19 @@ class Master:
 
 	def findDoor(self):
 		undo = self.mensajes[self.aparicion-1:]
-		actions = self.invertidor(undo)
-		self.puerta = self.manyStates(self.start[0],actions)
-		print(self.puerta)
-		self.buscador.publish('find')
+		#actions = self.invertidor(undo)
+		actions = []
+		for do in undo:
+			if do != 'Go':
+				do = do.split('#')
+				for i in do:
+					actions.append(i)
+			elif do == 'Go':
+					actions.append(do)
+			else:
+				print(do)
+		self.puerta = self.manyStates(self.start[0],actions,True)
+		print(self.puerta,'puerta')
 		self.goDoor()		
 	
 	def goDoor(self):
@@ -360,7 +410,7 @@ class Master:
 		aux = self.objective
 		self.objective = self.puerta
 		while not done and not rospy.is_shutdown():
-			print(self.start[0])
+			print(self.start)
 			mens = self.makePath(self.maze)
 			if len(mens) == 0:
 				break
@@ -378,6 +428,7 @@ class Master:
 			self.start = [aux]
 			self.what = -1
 		self.objective = aux
+		#self.buscador.publish('find')
 	
 	def invertidor(self, actions):
 		new = []

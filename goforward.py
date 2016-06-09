@@ -132,7 +132,7 @@ class Nodo:
 			print('ugh')
 			if self.collected():
 				self.collection.publish('True')
-				print(self.items)
+				print(self.collector,'colection')
 				self.chatter.say('All set, annihilation incoming')
 			self.slave.publish(paredes[:-1])
 			self.espera(0.5)
@@ -141,14 +141,6 @@ class Nodo:
 	def cosas(self, data):
 		self.items = data.data.split(':')
 		#print(self.items)
-		for i in range(len(self.items)):
-			if self.items[i] == '1' and i == 0:
-				self.collector[0] = True
-			elif self.items[i] == '1' and i == 1:
-				self.collector[1] = True
-			elif self.items[i] == '1' and i == 2:
-				self.collector[2] = True
-				self.hodor.publish('1')
 
 	def verify(self, data):	
 		if data.data == 'find':
@@ -368,6 +360,14 @@ class Nodo:
 			self.enderezar(1)
 			# self.chatter.say('Objective lost')
 			print('Pared')
+			for i in range(len(self.items)):
+				if self.items[i] == '1' and i == 0:
+					self.collector[0] = True
+				elif self.items[i] == '1' and i == 1:
+					self.collector[1] = True
+				elif self.items[i] == '1' and i == 2:
+					self.collector[2] = True
+					self.hodor.publish('1')
 			self.yell()
 			val = True
 		else:
