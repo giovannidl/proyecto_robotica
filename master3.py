@@ -2,6 +2,8 @@
 import rospy
 
 from std_msgs.msg import String
+from sound_play.msg import SoundRequest
+from sound_play.libsoundplay import SoundClient
 
 '''
 Movi shiftByn hacia fuera de la clase, porque no depende
@@ -110,6 +112,10 @@ class Master:
 		if msg.data == '1' and self.aux == 0:
 			self.aparicion = self.num_acc
 			self.aux += 1
+		if len(msg.data) > 1 and self.aux == 1:
+			actions = msg.data.split('#')
+			self.puerta = self.manyStates(self.actual, actions)
+			print('door found')
 
 	def __init__(self):
 		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('laberintos/c.txt')
@@ -133,15 +139,18 @@ class Master:
 		self.num_acc = 0
 		self.aparicion = 0
 		self.aux = 0
+		self.actual = None
 
 
 		rospy.init_node('brain', anonymous=True)
 		self.go = rospy.Publisher('todo', String)
 		self.loc = rospy.Publisher('find', String)
+		self.buscador = rospy.Publisher('puertas', String)
 		rospy.Subscriber('done', String, self.escucha)
 		rospy.Subscriber('colectabuzz', String, self.collector)
 		rospy.Subscriber('sapo', String, self.recolector)
 		rospy.Subscriber('doorFinder', String, self.reconocedoor)
+		self.chatter = SoundClient()
 
 		self.init_current_localization()
 
@@ -161,6 +170,7 @@ class Master:
 		#for path in self.camino:
 		#	print(path)
 		ans = ""
+		self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
 		for paso in self.camino:
 			ans += paso+"#"
 		return ans[:-1]
@@ -230,22 +240,22 @@ class Master:
 					if aux[0][2] == 'u':
 						newX = aux[0][1]
 						newY = aux[0][0] + 1
-						print(newX, newY)
+						#print(newX, newY)
 						new.append([[newY,newX,'u']]+[shiftByn(self.maze[newY][newX],0)])
 					elif aux[0][2] == 'l':
 						newX = aux[0][1] - 1
 						newY = aux[0][0]
-						print(newX, newY)
+						#print(newX, newY)
 						new.append([[newY,newX,'l']]+[shiftByn(self.maze[newY][newX],1)])
 					elif aux[0][2] == 'd':
 						newX = aux[0][1]
 						newY = aux[0][0] - 1
-						print(newX, newY)
+						#print(newX, newY)
 						new.append([[newY,newX,'d']]+[shiftByn(self.maze[newY][newX],2)])
 					elif aux[0][2] == 'r':
 						newX = aux[0][1] + 1 #me tiro un error fuera de indice (4,0)
 						newY = aux[0][0]
-						print(newX, newY)
+						#print(newX, newY)
 						new.append([[newY,newX,'r']]+[shiftByn(self.maze[newY][newX],3)])
 				else:
 					if aux[0][2] == 'u':
@@ -336,12 +346,81 @@ class Master:
 	def modo_busqueda(self):
 		pass
 
+	def findDoor(self):
+		undo = self.mensajes[self.aparicion-1:]
+		actions = self.invertidor(undo)
+		self.puerta = self.manyStates(self.start[0],actions)
+		print(self.puerta)
+		self.buscador.publish('find')
+		self.goDoor()		
+	
+	def goDoor(self):
+		initial = self.start
+		done = False
+		aux = self.objective
+		self.objective = self.puerta
+		while not done and not rospy.is_shutdown():
+			print(self.start[0])
+			mens = self.makePath(self.maze)
+			if len(mens) == 0:
+				break
+			while not rospy.is_shutdown() and self.what < 0:
+				self.go.publish(mens)
+			actions = mens.split('#')
+			self.go.publish('')
+			if (len(actions) == self.what):
+				done = True
+				break
+			hechos = []
+			for i in range(self.what):
+				hechos.append(actions.pop(0))
+			aux = self.manyStates(self.start[0], hechos)
+			self.start = [aux]
+			self.what = -1
+		self.objective = aux
+	
+	def invertidor(self, actions):
+		new = []
+		print(actions)
+		for action in actions:
+			if action != 'go':
+				aux = action.split('#')
+				print(aux)
+				if len(aux) == 4:
+					aux = ['Right','Right']
+				elif len(aux) == 3:
+					if aux[0] == 'Left':
+						aux = ['Left']
+					elif aux[0] == 'Right':
+						aux = ['Right']
+					else:
+						print(aux)
+				elif len(aux) == 1:
+					if aux[0] == 'Left':
+						aux = ['Right']
+					elif aux[0] == 'Right':
+						aux = ['Left']
+					else:
+						print(aux)
+				for i in aux:
+					new.append(i)
+			else:
+				aux = action
+				print(aux)
+				new.append(aux)
+		return new
+				
+
 if __name__ == "__main__":
 	mas = Master()
 	mas.start = mas.localize()
 	print(mas.start)
 	#if mas.collected is False:
 	#	mas.modo_busqueda()
+	mas.findDoor()
+	#rospy.sleep(2)
+	#mas.chatter.say('Starting Mision')
+	#rospy.sleep(2)
 	#mas.explore()
 	#while not rospy.is_shutdown() and not mas.done:
 	#	mas.go.publish(mens)

@@ -99,7 +99,8 @@ class Nodo:
 				if (max(self.distance) < 0.8):
 					self.enderezar(1)
 				acciones_terminadas += 1
-			#self.slave.publish(str(acciones_terminadas))
+			self.slave.publish(str(acciones_terminadas))
+			self.espera(0.2)
 			self.slave.publish('done')
 			#self.chatter.say('Goal reached, its time to party')
 			self.espera(0.5)
@@ -122,7 +123,6 @@ class Nodo:
 					paredes += '0#'
 				if accion == "Go":
 					self.avanza(self.largoPared,0.4)
-					print('dine')
 				elif accion == "Left":
 					self.gira(90,1)
 				elif accion == "Right":
@@ -149,6 +149,18 @@ class Nodo:
 			elif self.items[i] == '1' and i == 2:
 				self.collector[2] = True
 				self.hodor.publish('1')
+
+	def verify(self, data):	
+		if data.data == 'find':
+			aux = []
+			for i in range(4):
+				roboto.gira(90,1)
+				roboto.enderezar(1)
+				rospy.sleep(1)
+				aux.append('Left')
+				if self.items[2] == '1' and self.auxPuerta == 0:
+					self.hodor.publish('#'.join(aux))
+					self.auxPuerta += 1
 
 	def __init__(self):
 		#Aca se definen variables utiles
@@ -177,6 +189,7 @@ class Nodo:
 		self.todo = []
 		self.pared = False
 		self.auxPared = 0
+		self.auxPuerta = 0
 		self.items = [False,False,False]
 		self.collector = [False,False,False]
 
@@ -188,6 +201,7 @@ class Nodo:
 		rospy.Subscriber('todo',String,self.solve)
 		rospy.Subscriber('find',String,self.loc)
 		rospy.Subscriber('watchRoboto',String,self.cosas)
+		rospy.Subscriber('puertas',String,self.verify)
 		self.cmd_vel = rospy.Publisher('/cmd_vel_mux/input/navi', Twist)
 		self.slave = rospy.Publisher('done', String)	
 		self.collection = rospy.Publisher('colectabuzz', String)	
