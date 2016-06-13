@@ -132,7 +132,7 @@ class Nodo:
 			print('ugh')
 			if self.collected():
 				self.collection.publish('True')
-				print(self.collector,'colection')
+				print(self.collector,'collection')
 				self.chatter.say('All set, annihilation incoming')
 			self.slave.publish(paredes[:-1])
 			self.espera(0.5)
@@ -143,16 +143,21 @@ class Nodo:
 		#print(self.items)
 
 	def verify(self, data):	
-		if data.data == 'find':
+		if data.data == 'Clear':
+			self.collector = [False,False,False]
+			print(self.collector)
+		elif data.data == 'find':#falta probar si sirve
 			aux = []
 			for i in range(4):
+				if self.items[2] == '1' and self.auxPuerta == 0:
+					self.chatter.say('Door found')
+					self.hodor.publish('#'.join(aux))#para saber posicion exacta de la puerta, no tiene un uso claro
+					self.auxPuerta += 1
+					break
 				roboto.gira(90,1)
 				roboto.enderezar(1)
-				rospy.sleep(1)
 				aux.append('Left')
-				if self.items[2] == '1' and self.auxPuerta == 0:
-					self.hodor.publish('#'.join(aux))
-					self.auxPuerta += 1
+				rospy.sleep(1)
 
 	def __init__(self):
 		#Aca se definen variables utiles
@@ -368,6 +373,7 @@ class Nodo:
 				elif self.items[i] == '1' and i == 2:
 					self.collector[2] = True
 					self.hodor.publish('1')
+			print(self.collector)
 			self.yell()
 			val = True
 		else:

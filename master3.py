@@ -68,6 +68,7 @@ class Master:
 		return ans
 
 	def findPath(self,maze,start,finish,depth,set_print):
+		print(start,finish)
 		actual = [[],[]]
 		next = []
 		for initial in start:
@@ -100,7 +101,7 @@ class Master:
 	def collector(self,msg):
 		if msg.data == 'True':
 			self.collected = True
-			print('done')
+			print('done collecting')
 	
 	def recolector(self,msg):
 		self.mensajes.append(msg.data)
@@ -111,7 +112,7 @@ class Master:
 		if msg.data == '1' and self.aux == 0:
 			self.aparicion = self.num_acc 
 			self.aux += 1
-			print(self.aparicion)
+			print(self.aparicion,'aparece puerta')
 		if len(msg.data) > 1 and self.aux == 1:
 			actions = msg.data.split('#')
 			self.puerta = self.manyStates(self.actual, actions)
@@ -137,7 +138,7 @@ class Master:
 		self.collected = False
 		self.mensajes = []
 		self.num_acc = 0
-		self.aparicion = 0
+		self.aparicion = None
 		self.aux = 0
 		self.actual = None
 
@@ -164,6 +165,7 @@ class Master:
 				self.current.append([[y, x, 'r']] + [shiftByn(self.maze[y][x], 3)])
 
 	def makePath(self,maze):
+		print(maze)
 		self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
 		print(self.start)
 		#print("Camino")
@@ -272,9 +274,7 @@ class Master:
 		where = state[2]
 		y = state[0]
 		x = state[1]
-		print(state,action)
 		if action == 'Right':
-			#if inverted is False:
 			if where == 'u':
 				where = 'r'
 			elif where == 'r':
@@ -284,7 +284,6 @@ class Master:
 			elif where == 'l':
 				where = 'u'
 		elif action == 'Left':
-			#if inverted is False:
 			if where == 'u':
 				where = 'l'
 			elif where == 'l':
@@ -304,7 +303,6 @@ class Master:
 				elif where == 'l':
 					x = x - 1
 			elif inverted is True:
-				print(y,x,where,'true')
 				if where == 'u':
 					y = y - 1
 				elif where == 'r':
@@ -366,6 +364,9 @@ class Master:
 		pass
 
 	def findDoor(self):
+		if self.aparicion is None:
+			print('no encontre la puerta')
+			return
 		if self.aparicion == 0:
 			undo = self.mensajes
 		else:
@@ -385,8 +386,7 @@ class Master:
 			else:
 				print(do)
 		self.puerta = self.manyStates(self.start[0],actions,True)
-		print(self.puerta,'puerta')
-		self.goDoor()		
+		print(self.puerta,'puerta')	
 	
 	def goDoor(self):
 		initial = self.start
@@ -394,7 +394,6 @@ class Master:
 		aux = self.objective
 		self.objective = self.puerta
 		while not done and not rospy.is_shutdown():
-			print(self.start)
 			mens = self.makePath(self.maze)
 			if len(mens) == 0:
 				break
@@ -412,52 +411,27 @@ class Master:
 			self.start = [aux]
 			self.what = -1
 		self.objective = aux
-		#self.buscador.publish('find')
-	
-	def invertidor(self, actions):
-		new = []
-		print(actions)
-		for action in actions:
-			if action != 'go':
-				aux = action.split('#')
-				print(aux)
-				if len(aux) == 4:
-					aux = ['Right','Right']
-				elif len(aux) == 3:
-					if aux[0] == 'Left':
-						aux = ['Left']
-					elif aux[0] == 'Right':
-						aux = ['Right']
-					else:
-						print(aux)
-				elif len(aux) == 1:
-					if aux[0] == 'Left':
-						aux = ['Right']
-					elif aux[0] == 'Right':
-						aux = ['Left']
-					else:
-						print(aux)
-				for i in aux:
-					new.append(i)
-			else:
-				aux = action
-				print(aux)
-				new.append(aux)
-		return new
+		#self.buscador.publish('find') #falta probar si sirve
+
 				
 
 if __name__ == "__main__":
 	mas = Master()
 	mas.start = mas.localize()
-	print(mas.start)
-	#if mas.collected is False:
-	#	mas.modo_busqueda()
 	mas.findDoor()
+	print(mas.start,'start')
+	if mas.collected is False:
+		mas.modo_busqueda()
+	print('llendo a puerta')
+	mas.goDoor()
+	mas.buscador.publish('Clear')
 	#rospy.sleep(2)
 	#mas.chatter.say('Starting Mision')
 	#rospy.sleep(2)
-	#mas.explore()
+	#mens = 'Go'
 	#while not rospy.is_shutdown() and not mas.done:
 	#	mas.go.publish(mens)
+	#mas.go.publish('')
+	#mas.explore()
 	print("Termine")
 	#rospy.spin()
