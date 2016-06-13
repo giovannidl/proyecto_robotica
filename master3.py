@@ -109,8 +109,9 @@ class Master:
 
 	def reconocedoor(self,msg):
 		if msg.data == '1' and self.aux == 0:
-			self.aparicion = self.num_acc
+			self.aparicion = self.num_acc 
 			self.aux += 1
+			print(self.aparicion)
 		if len(msg.data) > 1 and self.aux == 1:
 			actions = msg.data.split('#')
 			self.puerta = self.manyStates(self.actual, actions)
@@ -271,49 +272,27 @@ class Master:
 		where = state[2]
 		y = state[0]
 		x = state[1]
-		if inverted is False:
-			print(999)
+		print(state,action)
 		if action == 'Right':
-			if inverted is False:
-				print(99)
-				if where == 'u':
-					where = 'r'
-				elif where == 'r':
-					where = 'd'
-				elif where == 'd':
-					where = 'l'
-				elif where == 'l':
-					where = 'u'
-			elif inverted is True:
-				print('true')
-				if where == 'u':
-					where = 'l'
-				elif where == 'r':
-					where = 'u'
-				elif where == 'd':
-					where = 'r'
-				elif where == 'l':
-					where = 'd'
+			#if inverted is False:
+			if where == 'u':
+				where = 'r'
+			elif where == 'r':
+				where = 'd'
+			elif where == 'd':
+				where = 'l'
+			elif where == 'l':
+				where = 'u'
 		elif action == 'Left':
-			if inverted is False:
-				if where == 'u':
-					where = 'l'
-				elif where == 'l':
-					where = 'd'
-				elif where == 'd':
-					where = 'r'
-				elif where == 'r':
-					where = 'u'
-			elif inverted is True:
-				print('truae')
-				if where == 'u':
-					where = 'r'
-				elif where == 'l':
-					where = 'u'
-				elif where == 'd':
-					where = 'l'
-				elif where == 'r':
-					where = 'd'
+			#if inverted is False:
+			if where == 'u':
+				where = 'l'
+			elif where == 'l':
+				where = 'd'
+			elif where == 'd':
+				where = 'r'
+			elif where == 'r':
+				where = 'u'
 		elif action == 'Go':
 			if inverted is False:
 				if where == 'u':
@@ -326,7 +305,6 @@ class Master:
 					x = x - 1
 			elif inverted is True:
 				print(y,x,where,'true')
-				print(88)
 				if where == 'u':
 					y = y - 1
 				elif where == 'r':
@@ -344,7 +322,7 @@ class Master:
 		elif inverted is True:
 			print(actions,'truth has come')
 			for i in range(len(actions)):
-				state = self.newState(state,actions[i-1],True)
+				state = self.newState(state,actions[-1-i],True)
 		return state
 
 	def modifyMap(self, maze, state):
@@ -388,8 +366,10 @@ class Master:
 		pass
 
 	def findDoor(self):
-		undo = self.mensajes[self.aparicion-1:]
-		#actions = self.invertidor(undo)
+		if self.aparicion == 0:
+			undo = self.mensajes
+		else:
+			undo = self.mensajes[self.aparicion:]
 		actions = []
 		for do in undo:
 			if do != 'Go':
