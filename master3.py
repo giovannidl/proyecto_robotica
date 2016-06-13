@@ -328,13 +328,13 @@ class Master:
 				print(y,x,where,'true')
 				print(88)
 				if where == 'u':
-					y = y + 1
-				elif where == 'r':
-					x = x + 1
-				elif where == 'd':
 					y = y - 1
-				elif where == 'l':
+				elif where == 'r':
 					x = x - 1
+				elif where == 'd':
+					y = y + 1
+				elif where == 'l':
+					x = x + 1
 		return [y,x,where]
 
 	def manyStates(self, state, actions, inverted = False):
@@ -395,6 +395,10 @@ class Master:
 			if do != 'Go':
 				do = do.split('#')
 				for i in do:
+					if i == 'Left':
+						i = i.replace('Left','Right')
+					elif i == 'Right':
+						i = i.replace('Right','Left')
 					actions.append(i)
 			elif do == 'Go':
 					actions.append(do)
