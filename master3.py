@@ -68,13 +68,14 @@ class Master:
 		return ans
 
 	def findPath(self,maze,start,finish,depth,set_print):
-		print(start,finish)
+		print(start,finish,'ROBOT QL')
 		actual = [[],[]]
 		next = []
 		for initial in start:
 			next.append([initial,[]])
 		visited = []
 		while actual[0] not in finish:
+			#print(next,'AGG TMRE')
 			if len(next) == 0:
 				print('NO WAY')
 				return []
@@ -91,6 +92,7 @@ class Master:
 		return actual[1]
 
 	def escucha(self,msg):
+		print(msg.data)
 		if msg.data == 'done':
 			self.done = True
 		elif len(msg.data) == 1:
@@ -165,16 +167,16 @@ class Master:
 				self.current.append([[y, x, 'r']] + [shiftByn(self.maze[y][x], 3)])
 
 	def makePath(self,maze):
-		print(maze)
+		#print(maze)
 		self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
-		print(self.start)
 		#print("Camino")
 		#for path in self.camino:
 		#	print(path)
 		ans = ""
-		self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
+		#self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
 		for paso in self.camino:
 			ans += paso+"#"
+		print(self.camino[:-1])
 		return ans[:-1]
 
 	def localize(self):
@@ -232,6 +234,7 @@ class Master:
 			self.done = False
 			print(len(self.current), con)
 			self.go.publish('')
+		return [self.current[0][0]]
 
 	def actualizarEstados(self,instruccion):
 		new = []
@@ -392,24 +395,29 @@ class Master:
 		initial = self.start
 		done = False
 		aux = self.objective
-		self.objective = self.puerta
+		print(initial, self.puerta, self.objective,'lkdd')
+		self.objective = [self.puerta]
+		print(self.objective)
+		mens = self.makePath(self.maze)
 		while not done and not rospy.is_shutdown():
-			mens = self.makePath(self.maze)
-			if len(mens) == 0:
-				break
-			while not rospy.is_shutdown() and self.what < 0:
-				self.go.publish(mens)
-			actions = mens.split('#')
-			self.go.publish('')
-			if (len(actions) == self.what):
-				done = True
-				break
-			hechos = []
-			for i in range(self.what):
-				hechos.append(actions.pop(0))
-			aux = self.manyStates(self.start[0], hechos)
-			self.start = [aux]
-			self.what = -1
+#			if len(mens) == 0:
+#				break
+#			while not rospy.is_shutdown() and self.what < 0:
+#				self.go.publish(mens)
+#			actions = mens.split('#')
+#			self.go.publish('')
+#			if (len(actions) == self.what):
+#				done = True
+#				break
+#			hechos = []
+#			for i in range(self.what):
+#				hechos.append(actions.pop(0))
+#			aux = self.manyStates(self.start[0], hechos)
+#			self.start = [aux]
+#			self.what = -1
+			self.go.publish(mens)
+			print(self.done)
+		self.go.publish('')
 		self.objective = aux
 		#self.buscador.publish('find') #falta probar si sirve
 
@@ -419,10 +427,10 @@ if __name__ == "__main__":
 	mas = Master()
 	mas.start = mas.localize()
 	mas.findDoor()
-	print(mas.start,'start')
 	if mas.collected is False:
 		mas.modo_busqueda()
-	print('llendo a puerta')
+	print('Ire a la puerta')
+	#mas.puerta = [1,3,'u']
 	mas.goDoor()
 	mas.buscador.publish('Clear')
 	#rospy.sleep(2)

@@ -234,11 +234,11 @@ class Turtlebot_Kinect(object):
                 cv2.waitKey(10)
                 print(min_val)
             '''
-            if (i == 0 and min_val < 380000000):
+            if (i == 0 and min_val < 360000000):
                 ans[0] = 1
-            elif (i == 1 and min_val < 400000000):
+            elif (i == 1 and min_val < 420000000):
                 ans[1] = 1
-            elif (i == 2 and min_val < 330000000):
+            elif (i == 2 and min_val < 350000000):
                 ans[2] = 1
             '''
             elif (i == 3 and min_val < 280000000):

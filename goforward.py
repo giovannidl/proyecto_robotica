@@ -101,6 +101,7 @@ class Nodo:
 				acciones_terminadas += 1
 			self.slave.publish(str(acciones_terminadas))
 			self.espera(0.2)
+			print('Im done')
 			self.slave.publish('done')
 			#self.chatter.say('Goal reached, its time to party')
 			self.espera(0.5)
@@ -133,7 +134,7 @@ class Nodo:
 			if self.collected():
 				self.collection.publish('True')
 				print(self.collector,'collection')
-				self.chatter.say('All set, annihilation incoming')
+				#self.chatter.say('All set, annihilation incoming')
 			self.slave.publish(paredes[:-1])
 			self.espera(0.5)
 			self.ocupado = False
@@ -154,6 +155,7 @@ class Nodo:
 					self.hodor.publish('#'.join(aux))#para saber posicion exacta de la puerta, no tiene un uso claro
 					self.auxPuerta += 1
 					break
+				#else:?
 				roboto.gira(90,1)
 				roboto.enderezar(1)
 				aux.append('Left')
