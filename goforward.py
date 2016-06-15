@@ -146,20 +146,24 @@ class Nodo:
 	def verify(self, data):	
 		if data.data == 'Clear':
 			self.collector = [False,False,False]
-			print(self.collector)
 		elif data.data == 'find':#falta probar si sirve
 			aux = []
+			vueltas = 0
 			for i in range(4):
 				if self.items[2] == '1' and self.auxPuerta == 0:
 					self.chatter.say('Door found')
-					self.hodor.publish('#'.join(aux))#para saber posicion exacta de la puerta, no tiene un uso claro
+					print('puerta!',self.auxPuerta,aux)
+					if len(aux) > 1:
+						self.hodor.publish('#'.join(aux))#para saber posicion exacta de la puerta, no tiene un uso claro
 					self.auxPuerta += 1
 					break
-				#else:?
-				roboto.gira(90,1)
-				roboto.enderezar(1)
-				aux.append('Left')
-				rospy.sleep(1)
+				else:
+					print('no puerta :c')
+					roboto.gira(90,1)
+					roboto.enderezar(1)
+					aux.append('Left')
+					rospy.sleep(1)
+					vueltas += 1
 
 	def __init__(self):
 		#Aca se definen variables utiles

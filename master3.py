@@ -92,7 +92,7 @@ class Master:
 		return actual[1]
 
 	def escucha(self,msg):
-		print(msg.data)
+		#print(msg.data)
 		if msg.data == 'done':
 			self.done = True
 		elif len(msg.data) == 1:
@@ -143,6 +143,7 @@ class Master:
 		self.aparicion = None
 		self.aux = 0
 		self.actual = None
+		self.puerta = None
 
 
 		rospy.init_node('brain', anonymous=True)
@@ -321,7 +322,6 @@ class Master:
 			for action in actions:
 				state = self.newState(state,action)	
 		elif inverted is True:
-			print(actions,'truth has come')
 			for i in range(len(actions)):
 				state = self.newState(state,actions[-1-i],True)
 		return state
@@ -393,13 +393,12 @@ class Master:
 	
 	def goDoor(self):
 		initial = self.start
-		done = False
+		self.done = False
 		aux = self.objective
-		print(initial, self.puerta, self.objective,'lkdd')
 		self.objective = [self.puerta]
-		print(self.objective)
+		#print(self.objective)
 		mens = self.makePath(self.maze)
-		while not done and not rospy.is_shutdown():
+		while not self.done and not rospy.is_shutdown():
 #			if len(mens) == 0:
 #				break
 #			while not rospy.is_shutdown() and self.what < 0:
@@ -416,24 +415,32 @@ class Master:
 #			self.start = [aux]
 #			self.what = -1
 			self.go.publish(mens)
-			print(self.done)
 		self.go.publish('')
+		self.done = False
 		self.objective = aux
-		#self.buscador.publish('find') #falta probar si sirve
+		self.buscador.publish('find') #falta probar si sirve
 
 				
 
 if __name__ == "__main__":
 	mas = Master()
 	mas.start = mas.localize()
-	mas.findDoor()
+	puerta = False
+	if mas.puerta is not None:
+		mas.findDoor()
+		print('puertecinha')	
+		puerta = True
 	if mas.collected is False:
+		print('entrando a modo busqueda')
 		mas.modo_busqueda()
+	if puerta is False:
+		mas.findDoor()
+		print('pupupu-puerta')
 	print('Ire a la puerta')
 	#mas.puerta = [1,3,'u']
 	mas.goDoor()
 	mas.buscador.publish('Clear')
-	#rospy.sleep(2)
+	rospy.sleep(10)
 	#mas.chatter.say('Starting Mision')
 	#rospy.sleep(2)
 	#mens = 'Go'
