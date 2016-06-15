@@ -143,7 +143,12 @@ class Master:
 		self.aparicion = None
 		self.aux = 0
 		self.actual = None
+<<<<<<< HEAD
+		self.puerta = None
+
+=======
 		self.check_grid = None
+>>>>>>> Busca objetivos localizado
 
 		rospy.init_node('brain', anonymous=True)
 		self.go = rospy.Publisher('todo', String)
@@ -156,6 +161,7 @@ class Master:
 		self.chatter = SoundClient()
 
 		self.init_current_localization()
+		# self.reset_check_grid()
 
 	def init_current_localization(self):
 		##Primero se buscan todos los estados en los que podria estar
@@ -443,9 +449,8 @@ class Master:
 						self.checkImages()
 			# Si llega hasta aca y no se ha encontrado los objetivos, reinicio las celdas alcanzadas
 			self.reset_check_grid()
-	def set_check_state(self):
-		undo_actions = self.undo_actions(self.mensajes)
-		self.markManyStates(self.start[0], undo_actions, True)
+
+
 
 	def findDoor(self):
 		if self.aparicion is None:
@@ -455,22 +460,14 @@ class Master:
 			undo = self.mensajes
 		else:
 			undo = self.mensajes[self.aparicion:]
-		actions = []
-		for do in undo:
-			if do != 'Go':
-				do = do.split('#')
-				for i in do:
-					if i == 'Left':
-						i = i.replace('Left','Right')
-					elif i == 'Right':
-						i = i.replace('Right','Left')
-					actions.append(i)
-			elif do == 'Go':
-					actions.append(do)
-			else:
-				print(do)
+
+		actions = self.undo_actions(undo)
 		self.puerta = self.manyStates(self.start[0],actions,True)
-		print(self.puerta,'puerta')	
+		print(self.puerta,'puerta')
+
+	def set_check_state(self):
+		undo_actions = self.undo_actions(self.mensajes)
+		self.markManyStates(self.start[0], undo_actions, True)
 	
 	def goDoor(self):
 		initial = self.start
@@ -496,7 +493,6 @@ class Master:
 #			self.start = [aux]
 #			self.what = -1
 			self.go.publish(mens)
-			print(self.done)
 		self.go.publish('')
 		self.done = False
 		self.objective = aux
@@ -507,11 +503,16 @@ class Master:
 if __name__ == "__main__":
 	mas = Master()
 	mas.start = mas.localize()
+<<<<<<< HEAD
 	puerta = False
 	if mas.puerta is not None:
 		mas.findDoor()
 		print('puertecinha')	
 		puerta = True
+=======
+	mas.findDoor()
+	mas.set_check_state()
+>>>>>>> Busca objetivos localizado
 	if mas.collected is False:
 		print('entrando a modo busqueda')
 		mas.modo_busqueda()
