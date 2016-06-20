@@ -143,6 +143,7 @@ class Master:
 		self.aparicion = None
 		self.aux = 0
 		self.actual = None
+		self.puerta = None
 		self.check_grid = None
 
 		rospy.init_node('brain', anonymous=True)
@@ -175,8 +176,8 @@ class Master:
 			self.check_grid[self.start[0][0]][self.start[0][1]][1] = True
 			for j in range(self.Y):
 				for i in range(self.X):
-					possible_route = self.findPath(self.maze, self.start[0], [self.Y, self.X], self.depth, False)
-					if len(possible_route) == 0 and  [self.Y, self.X] != self.start[0]:
+					possible_route = self.findPath(self.maze, self.start, self.makeGoals(i, j), self.depth, False)
+					if len(possible_route) == 0 and  [j, i] != self.start[0]:
 						self.check_grid[j][i][0] = False
 
 	def reset_check_grid(self):
@@ -186,7 +187,13 @@ class Master:
 					if self.check_grid[j][i][0]:
 						self.check_grid[j][i][1] = False
 
-
+	def makeGoals(self,x,y):
+		ans = []
+		ans.append([y,x,'u'])
+		ans.append([y,x,'l'])
+		ans.append([y,x,'d'])
+		ans.append([y,x,'r'])
+		return ans
 
 	def makePath(self,maze):
 		#print(maze)
@@ -362,7 +369,7 @@ class Master:
 			print(actions, 'truth has come')
 			for i in range(len(actions)):
 				state = self.newState(state, actions[-1 - i], True)
-				self.check_grid[state[0], state[1]][1] = True
+				self.check_grid[state[1]][state[0]][1] = True
 
 	def modifyMap(self, maze, state):
 		y = state[0]
@@ -403,7 +410,7 @@ class Master:
 
 	def undo_actions(self, for_undo_list):
 		actions = []
-		for do in undo:
+		for do in for_undo_list:
 			if do != 'Go':
 				do = do.split('#')
 				for i in do:
@@ -420,26 +427,29 @@ class Master:
 
 	def go_objective(self, objective):
 		initial = self.start
-		done = False
+		self.done = False
 		aux = self.objective
-		print(initial, self.puerta, self.objective, 'lkdd')
+		#print(initial, self.puerta, self.objective, 'lkdd')
 		self.objective = objective
-		print(self.objective)
+		print("Estoy en " + str(self.start) + ", ire a " + str(self.objective))
 		mens = self.makePath(self.maze)
-		while not done and not rospy.is_shutdown():
+		while not self.done and not rospy.is_shutdown():
 			self.go.publish(mens)
-			print(self.done)
+			#print(self.done)
 		self.go.publish('')
+		self.start = self.objective
 		self.objective = aux
-
+		self.done = False
 
 	def modo_busqueda(self):
+		self.reset_reachable_grid()
+		self.set_check_state()
 		while not self.collected and not rospy.is_shutdown():
 			for j in range(self.Y):
 				for i in range(self.X):
 					# Verificamos las celdas que son alcanzables y no han sido visitadas
 					if self.check_grid[j][i][0] and not self.check_grid[j][i][1] and not self.collected:
-						self.go_objective([self.Y, self.X])
+						self.go_objective(self.makeGoals(i,j))
 						self.checkImages()
 			# Si llega hasta aca y no se ha encontrado los objetivos, reinicio las celdas alcanzadas
 			self.reset_check_grid()
@@ -480,25 +490,26 @@ class Master:
 		#print(self.objective)
 		mens = self.makePath(self.maze)
 		while not self.done and not rospy.is_shutdown():
-#			if len(mens) == 0:
-#				break
-#			while not rospy.is_shutdown() and self.what < 0:
-#				self.go.publish(mens)
-#			actions = mens.split('#')
-#			self.go.publish('')
-#			if (len(actions) == self.what):
-#				done = True
-#				break
-#			hechos = []
-#			for i in range(self.what):
-#				hechos.append(actions.pop(0))
-#			aux = self.manyStates(self.start[0], hechos)
-#			self.start = [aux]
-#			self.what = -1
-			self.go.publish(mens)
-			print(self.done)
+			if len(mens) == 0:
+				break
+			while not rospy.is_shutdown() and self.what < 0:
+				self.go.publish(mens)
+			actions = mens.split('#')
+			self.go.publish('')
+			if (len(actions) == self.what):
+				done = True
+				break
+			hechos = []
+			for i in range(self.what):
+				hechos.append(actions.pop(0))
+			aux = self.manyStates(self.start[0], hechos)
+			self.start = [aux]
+			self.what = -1
+#			self.go.publish(mens)
+#			print(self.done)
 		self.go.publish('')
 		self.done = False
+		print("Estoy en " + str(self.start) + ", ire a " + str(self.objective))
 		self.objective = aux
 		self.buscador.publish('find') #falta probar si sirve
 
@@ -523,12 +534,13 @@ if __name__ == "__main__":
 	mas.goDoor()
 	mas.buscador.publish('Clear')
 	rospy.sleep(10)
-	#mas.chatter.say('Starting Mision')
-	#rospy.sleep(2)
-	#mens = 'Go'
-	#while not rospy.is_shutdown() and not mas.done:
-	#	mas.go.publish(mens)
-	#mas.go.publish('')
-	#mas.explore()
+	mas.chatter.say('Starting Mision')
+	rospy.sleep(20)
+	mens = 'Go'
+	while not rospy.is_shutdown() and not mas.done:
+		mas.go.publish(mens)
+	mas.go.publish('')
+	mas.start = [mas.manyStates(self.start, ['Go'])]
+	mas.explore()
 	print("Termine")
 	#rospy.spin()
