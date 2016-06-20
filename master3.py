@@ -68,7 +68,7 @@ class Master:
 		return ans
 
 	def findPath(self,maze,start,finish,depth,set_print):
-		print(start,finish,'ROBOT QL')
+		#print(start,finish,'ROBOT QL')
 		actual = [[],[]]
 		next = []
 		for initial in start:
@@ -95,7 +95,7 @@ class Master:
 		#print(msg.data)
 		if msg.data == 'done':
 			self.done = True
-		elif len(msg.data) == 1:
+		elif len(msg.data) <= 2:
 			self.what = int(msg.data)
 		else:
 			self.walls = msg.data.split('#')
@@ -205,7 +205,7 @@ class Master:
 		#self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
 		for paso in self.camino:
 			ans += paso+"#"
-		print(self.camino[:-1])
+		#print(self.camino[:-1])
 		return ans[:-1]
 
 	def localize(self):
@@ -366,7 +366,7 @@ class Master:
 			for action in actions:
 				state = self.newState(state, action)
 		elif inverted is True:
-			print(actions, 'truth has come')
+			#print(actions, 'truth has come')
 			for i in range(len(actions)):
 				state = self.newState(state, actions[-1 - i], True)
 				self.check_grid[state[1]][state[0]][1] = True
@@ -513,10 +513,40 @@ class Master:
 		self.objective = aux
 		self.buscador.publish('find') #falta probar si sirve
 
-				
+	def goTo(self, objective):
+		save = self.objective
+		print('Estoy en ' + str(self.start[0]) + ', ire a ' + str(objective[0]))
+		self.objective = objective
+		self.done = False
+		while not self.done and not rospy.is_shutdown():
+			mens = self.makePath(self.maze)
+			if len(mens) == 0:
+				break
+			while not rospy.is_shutdown() and self.what < 0:
+				self.go.publish(mens)
+			actions = mens.split('#')
+			self.go.publish('')
+			hechos = []
+			for i in range(self.what):
+				hechos.append(actions.pop(0))
+			print('Hice las siguientes acciones: ',hechos)
+			aux = self.manyStates(self.start[0],hechos)
+			print('Quede en la posicion ',aux)
+			print('')
+			self.start = [aux]
+			if (len(actions) == self.what):
+				done = True
+				break
+			self.what = -1
+		self.objective = save
 
 if __name__ == "__main__":
 	mas = Master()
+	mas.start = [[0,1,'r']]
+	mas.goTo([[0,0,'d']])
+	mas.goTo([[1,1,'l']])
+	mas.goTo([[1,0,'r']])
+'''
 	mas.start = mas.localize()
 	puerta = False
 	if mas.puerta is not None:
@@ -543,4 +573,6 @@ if __name__ == "__main__":
 	mas.start = [mas.manyStates(self.start, ['Go'])]
 	mas.explore()
 	print("Termine")
+'''
+
 	#rospy.spin()

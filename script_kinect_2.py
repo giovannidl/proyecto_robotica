@@ -22,10 +22,17 @@ nRight = cv2.imread('Lab6_imagenes/nodoblarDer.jpg',cv2.IMREAD_GRAYSCALE)
 templates = [face, key, door]
 
 class Turtlebot_Kinect(object):
+	
+    def listen(self,data):
+        print(self.rec)
+        if (data.data == '1'):
+            self.rec = True
+
     def __init__(self):
         self.__depth_img = rospy.Subscriber('/camera/depth/image',Image ,self.__depth_handler)
         self.__depth_img = rospy.Subscriber('/camera/depth/image_raw',Image ,self.__depth_handler)
         self.__rgb_img= rospy.Subscriber('/camera/rgb/image_color',Image,self.__rgb_handler)#original rgb/image, no hace nada
+        self.reconocer = rospy.Subscriber('ask', String, self.listen)
         self.obs = rospy.Publisher('obstaculo',String)
         self.amigo = rospy.Publisher('amigoFiel',String)
         self.dis2 = rospy.Publisher('enderezador3',String)
@@ -37,6 +44,7 @@ class Turtlebot_Kinect(object):
         self.upGreen = numpy.array([80,255,2500])
         self.objectiveX = 0
         self.objectiveY = 0
+        self.rec = False
 
     def __depth_handler(self, data):
         try:
@@ -74,8 +82,11 @@ class Turtlebot_Kinect(object):
             imagen1 = cv2.cvtColor(self.current_cv_rgb_image, cv2.COLOR_BGR2GRAY)
             imagen = cv2.blur(imagen1,(10,10))
             #interes = cv2.inRange(imagen, self.lowGreen, self.upGreen)
-            ans = self.reconocer(imagen1)
-            self.watcher.publish(':'.join(map(str,ans)))
+            if self.rec == True:
+                print('Reconociendo imagenes...')
+                self.rec = False
+                ans = self.reconocer(imagen1)
+                self.watcher.publish(':'.join(map(str,ans)))
             #print('Y-L',ans[3]==1,'Y-R',ans[4]==1,'N-L',ans[5]==1,'N-R',ans[6]==1)
             '''
             cv2.imshow('filtro', interes)
