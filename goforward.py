@@ -90,8 +90,10 @@ class Nodo:
 				print('Solve Center: ' + str(self.distance[1]) + ' Pared: ' + str(self.pared) + ' DisPared: ' + str(self.auxPared))
 				if accion == "Go":
 					if self.distance[1] < WALL_DISTANCE: # and self.pared:
-						break
-					self.avanza(self.largoPared,0.4)
+						print('ignoring go')
+						pass
+					else:
+						self.avanza(self.largoPared,0.4)
 				elif accion == "Left":
 					self.gira(90,1)
 				elif accion == "Right":
@@ -209,7 +211,8 @@ class Nodo:
 		self.slave = rospy.Publisher('done', String)	
 		self.collection = rospy.Publisher('colectabuzz', String)	
 		self.actions = rospy.Publisher('sapo', String)	
-		self.hodor = rospy.Publisher('doorFinder', String)		
+		self.hodor = rospy.Publisher('doorFinder', String)	
+		self.check = rospy.Publisher('ask', String)	
 		self.r = rospy.Rate(20);  #se asegura de mantener el loop a 20 Hz
 		self.chatter = SoundClient()
 
@@ -341,8 +344,21 @@ class Nodo:
 		while (not rospy.is_shutdown()):
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
+			self.check.publish('1')
+			#print(self.items)
+			for i in range(len(self.items)):
+				if self.items[i] == '1' and i == 0:
+					self.collector[0] = True
+				elif self.items[i] == '1' and i == 1:
+					self.collector[1] = True
+				elif self.items[i] == '1' and i == 2:
+					self.collector[2] = True
+					self.hodor.publish('1')
+			#print(self.collector)
+			#self.yell()
 			if (self.enderezado):
 				break
+		print(self.items)
 		self.parar()
 		self.espera(0.7)
 		#roboto.chatter.say('Objective located ready for annihilation')
@@ -369,18 +385,21 @@ class Nodo:
 		print('Identifica' + str(self.pared))
 		if self.distance[1] < 0.7:# and self.pared:
 			self.enderezar(1)
-			# self.chatter.say('Objective lost')
-			print('Pared')
-			for i in range(len(self.items)):
-				if self.items[i] == '1' and i == 0:
-					self.collector[0] = True
-				elif self.items[i] == '1' and i == 1:
-					self.collector[1] = True
-				elif self.items[i] == '1' and i == 2:
-					self.collector[2] = True
-					self.hodor.publish('1')
+			for j in range(4):
+				#print('identificando')
+				self.check.publish('1')
+				for i in range(len(self.items)):
+					if self.items[i] == '1' and i == 0:
+						self.collector[0] = True
+					elif self.items[i] == '1' and i == 1:
+						self.collector[1] = True
+					elif self.items[i] == '1' and i == 2:
+						self.collector[2] = True
+						self.hodor.publish('1')
 			print(self.collector)
 			self.yell()
+			# self.chatter.say('Objective lost')
+			print('Pared')
 			val = True
 		else:
 			print('Pasillo')

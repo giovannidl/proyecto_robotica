@@ -114,14 +114,18 @@ class Master:
 		if msg.data == '1' and self.aux == 0:
 			self.aparicion = self.num_acc 
 			self.aux += 1
+			self.flagPuerta = True
 			print(self.aparicion,'aparece puerta')
 		if len(msg.data) > 1 and self.aux == 1:
-			actions = msg.data.split('#')
-			self.puerta = self.manyStates(self.actual, actions)
-			print('door found')
+			try:
+				actions = msg.data.split('#')
+				self.puerta = self.manyStates(self.actual, actions)
+				print('door found')
+			except:
+				print(msg.data)
 
 	def __init__(self):
-		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('laberintos/c.txt')
+		dimX, dimY, self.maze, initial, objective, depth = self.loadWorld('laberintos/c7.txt')
 		self.X = dimX
 		self.Y = dimY
 #		print("Celdas")
@@ -145,6 +149,7 @@ class Master:
 		self.actual = None
 		self.puerta = None
 		self.check_grid = None
+		self.flagPuerta = False
 
 		rospy.init_node('brain', anonymous=True)
 		self.go = rospy.Publisher('todo', String)
@@ -449,10 +454,12 @@ class Master:
 				for i in range(self.X):
 					# Verificamos las celdas que son alcanzables y no han sido visitadas
 					if self.check_grid[j][i][0] and not self.check_grid[j][i][1] and not self.collected:
-						self.go_objective(self.makeGoals(i,j))
+						#self.go_objective(self.makeGoals(i,j))
+						self.goTo([self.makeGoals(i,j)])
 						self.checkImages()
 			# Si llega hasta aca y no se ha encontrado los objetivos, reinicio las celdas alcanzadas
 			self.reset_check_grid()
+
 	def set_check_state(self):
 		undo_actions = self.undo_actions(self.mensajes)
 		self.markManyStates(self.start[0], undo_actions, True)
@@ -484,6 +491,8 @@ class Master:
 	
 	def goDoor(self):
 		initial = self.start
+		self.goTo([self.puerta])
+		'''
 		self.done = False
 		aux = self.objective
 		self.objective = [self.puerta]
@@ -509,8 +518,9 @@ class Master:
 #			print(self.done)
 		self.go.publish('')
 		self.done = False
-		print("Estoy en " + str(self.start) + ", ire a " + str(self.objective))
+		#print("Estoy en " + str(self.start) + ", ire a " + str(self.objective))
 		self.objective = aux
+		'''
 		self.buscador.publish('find') #falta probar si sirve
 
 	def goTo(self, objective):
@@ -541,15 +551,18 @@ class Master:
 		self.objective = save
 
 if __name__ == "__main__":
+	'''
 	mas = Master()
 	mas.start = [[0,1,'r']]
 	mas.goTo([[0,0,'d']])
 	mas.goTo([[1,1,'l']])
 	mas.goTo([[1,0,'r']])
-'''
+	'''
+	mas = Master()
 	mas.start = mas.localize()
 	puerta = False
-	if mas.puerta is not None:
+	print(mas.flagPuerta)
+	if mas.flagPuerta is True:
 		mas.findDoor()
 		print('puertecinha')	
 		puerta = True
@@ -564,15 +577,16 @@ if __name__ == "__main__":
 	mas.goDoor()
 	mas.buscador.publish('Clear')
 	rospy.sleep(10)
-	mas.chatter.say('Starting Mision')
+	#mas.chatter.say('Starting Mision')
 	rospy.sleep(20)
-	mens = 'Go'
-	while not rospy.is_shutdown() and not mas.done:
-		mas.go.publish(mens)
-	mas.go.publish('')
-	mas.start = [mas.manyStates(self.start, ['Go'])]
-	mas.explore()
+	#mens = 'Go'
+	#while not rospy.is_shutdown() and not mas.done:
+	#	mas.go.publish(mens)
+	#mas.go.publish('')
+	mas.start = [mas.manyStates(mas.start, ['Go'])]
+	print(mas.start)
+	#mas.explore()
 	print("Termine")
-'''
+
 
 	#rospy.spin()

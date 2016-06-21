@@ -32,7 +32,7 @@ class Turtlebot_Kinect(object):
         self.__depth_img = rospy.Subscriber('/camera/depth/image',Image ,self.__depth_handler)
         self.__depth_img = rospy.Subscriber('/camera/depth/image_raw',Image ,self.__depth_handler)
         self.__rgb_img= rospy.Subscriber('/camera/rgb/image_color',Image,self.__rgb_handler)#original rgb/image, no hace nada
-        self.reconocer = rospy.Subscriber('ask', String, self.listen)
+        self.reconoceras = rospy.Subscriber('ask', String, self.listen)
         self.obs = rospy.Publisher('obstaculo',String)
         self.amigo = rospy.Publisher('amigoFiel',String)
         self.dis2 = rospy.Publisher('enderezador3',String)
@@ -226,6 +226,7 @@ class Turtlebot_Kinect(object):
 
 		msj = puntoInicio+';'+puntoMedio+';'+puntoFinal
 		return msj
+
     def reconocer(self, imagen, n = 0):
 #        print('in')
         ans = [0,0,0,0,0,0,0]
