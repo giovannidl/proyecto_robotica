@@ -17,10 +17,18 @@ face = cv2.imread('Lab6_imagenes/averageman.jpg',cv2.IMREAD_GRAYSCALE)
 key = cv2.imread('Lab6_imagenes/llave.jpg',cv2.IMREAD_GRAYSCALE)
 door = cv2.imread('Lab6_imagenes/puerta.jpg',cv2.IMREAD_GRAYSCALE)
 yLeft = cv2.imread('Lab6_imagenes/doblarIzq.jpg',cv2.IMREAD_GRAYSCALE)
+Left = yLeft[20:180, 20:180]
+yLeft = cv2.inRange(Left,0,10)
 yRight = cv2.imread('Lab6_imagenes/doblarDer.jpg',cv2.IMREAD_GRAYSCALE)
+Right = yRight[0:180, 20:180]
+yRight = cv2.inRange(Right,0,10)
 nLeft = cv2.imread('Lab6_imagenes/nodoblarIzq.jpg',cv2.IMREAD_GRAYSCALE)
+Leftn = nLeft[20:180, 20:180]
+nLeft = cv2.inRange(Leftn,0,10)
 nRight = cv2.imread('Lab6_imagenes/nodoblarDer.jpg',cv2.IMREAD_GRAYSCALE)
-templates = [face, key, door]
+Rightn = nRight[10:180, 20:180]
+nRight= cv2.inRange(Rightn,0,10)
+templates = [yLeft,yRight,nLeft,nRight]
 
 class Turtlebot_Kinect(object):
 	
@@ -230,6 +238,7 @@ class Turtlebot_Kinect(object):
 
     def reconocer(self, imagen, n = 0):
 #        print('in')
+        imagen = cv2.inRange(imagen,0,20)
         ans = [0,0,0,0,0,0,0]
         for i in range(len(templates)):
             #print(temple.shape)#,imagen.type())
@@ -238,24 +247,31 @@ class Turtlebot_Kinect(object):
             #temple = cv2.cvtColor(temple, cv2.COLOR_BGR2GRAY)
             res = cv2.matchTemplate(imagen,temple,cv2.TM_SQDIFF)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-            '''
+            
             if (i == 1):
                 top_left = min_loc
                 bottom_right = (top_left[0] + w, top_left[1] + h)
                 cv2.rectangle(imagen,top_left, bottom_right, (255,0,0) , 2)
                 cv2.imshow('blarg',imagen)
                 cv2.waitKey(10)
-                print(min_val)
-            '''
-            if (i == 0 and min_val < 360000000):
+                #print(min_val)
+            
+            if (i == 0 and min_val < 530000):
                 ans[0] = 1
-            elif (i == 1 and min_val < 420000000):
+                print(1)
+            elif (i == 1 and min_val < 530000):
                 ans[1] = 1
-            elif (i == 2 and min_val < 350000000):
+                print(2)
+            elif (i == 2 and min_val < 87000000):
                 ans[2] = 1
-            '''
-            elif (i == 3 and min_val < 280000000):
+                print(3)
+            elif (i == 3 and min_val < 87000000):
                 ans[3] = 1
+                print(4)
+            else:
+                print(0)
+            print(i,min_val)
+            '''
             elif (i == 4 and min_val < 250000000):
                 ans[4] = 1
             elif (i == 5 and min_val < 250000000):

@@ -43,9 +43,7 @@ class Nodo:
 	def obstaculo(self,msj):
 		auxdistance = map(float,msj.data.split(':'))
 		for dist in range(len(auxdistance)):
-			if auxdistance[dist] != 0 and dist == 1:
-				self.distance[dist] = auxdistance[dist]
-			else:
+			if auxdistance[dist] != 0:
 				self.distance[dist] = auxdistance[dist]
 		self.left = self.distance[0] < 0.6 or self.distance[0] > 90
 
@@ -198,9 +196,6 @@ class Nodo:
 		self.pared = False
 		self.auxPared = 0
 		self.auxPuerta = 0
-		self.flagKey = 0
-		self.flagAverage = 0
-		self.flagPuerta = 0
 		self.items = [False,False,False]
 		self.collector = [False,False,False]
 
@@ -425,15 +420,12 @@ class Nodo:
 
 	def yell(self):
 		self.chatter.stopAll()
-		if self.items[0] == '1' and self.flagAverage == 0:
+		if self.items[0] == '1':
 			self.chatter.say('AverageMan ready to kill')
-			self.flagAverage + 1
-		elif self.items[1] == '1' and self.flagPuerta == 0:
+		elif self.items[1] == '1':
 			self.chatter.say('One step closer to murder')
-			self.flagPuerta = 1
-		elif self.items[2] == '1' and self.flagKey == 0:
+		elif self.items[2] == '1':
 			self.chatter.say('Killing spree is ours')
-			self.flagKey = 1
 		else:
 			self.chatter.say('Boring')
 
@@ -449,15 +441,10 @@ class Nodo:
 if __name__ == "__main__":
 	roboto = Nodo()
 	rospy.sleep(1)
-	while(not rospy.is_shutdown()):
-			print('identificando')
-			roboto.check.publish('1')
-			rospy.sleep(1)
 	#for i in range(4):
 	#	roboto.gira(90,1)
 	#	roboto.enderezar(1)
 		#rospy.sleep(1)
 	#	roboto.yell()
 	#	rospy.sleep(1)
-	#roboto.enderezar(1)
 	rospy.spin()

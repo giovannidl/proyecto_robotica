@@ -80,7 +80,7 @@ class Turtlebot_Kinect(object):
             cv2.imshow("image_rgb",numpy.concatenate((I,D),axis=1))
             cv2.waitKey(10)
             '''
-            imagen1 = cv2.cvtColor(self.current_cv_rgb_image, cv2.COLOR_BGR2GRAY)#COLOR_BGR2HSV
+            imagen1 = cv2.cvtColor(self.current_cv_rgb_image, cv2.COLOR_BGR2GRAY)
             imagen = cv2.blur(imagen1,(10,10))
             #interes = cv2.inRange(imagen, self.lowGreen, self.upGreen)
             if self.rec == True:
