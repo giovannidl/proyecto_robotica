@@ -115,8 +115,6 @@ class Master:
 			self.aparicion = self.num_acc 
 			self.aux += 1
 			self.flagPuerta = True
-			print(self.aparicion,'aparece puerta')
-			self.chatter.say('We found the door')
 		if len(msg.data) > 1 and self.aux == 1:
 			try:
 				actions = msg.data.split('#')
@@ -208,16 +206,10 @@ class Master:
 		return ans
 
 	def makePath(self,maze):
-		#print(maze)
 		self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
-		#print("Camino")
-		#for path in self.camino:
-		#	print(path)
 		ans = ""
-		#self.camino = self.findPath(maze,self.start,self.objective,self.depth, False)
 		for paso in self.camino:
 			ans += paso+"#"
-		#print(self.camino[:-1])
 		return ans[:-1]
 
 	def localize(self):
@@ -503,43 +495,12 @@ class Master:
 	def goDoor(self):
 		initial = self.start
 		self.goTo([self.puerta])
-		'''
-		self.done = False
-		aux = self.objective
-		self.objective = [self.puerta]
-		#print(self.objective)
-		mens = self.makePath(self.maze)
-		while not self.done and not rospy.is_shutdown():
-			if len(mens) == 0:
-				break
-			while not rospy.is_shutdown() and self.what < 0:
-				self.go.publish(mens)
-			actions = mens.split('#')
-			self.go.publish('')
-			if (len(actions) == self.what):
-				done = True
-				break
-			hechos = []
-			for i in range(self.what):
-				hechos.append(actions.pop(0))
-			aux = self.manyStates(self.start[0], hechos)
-			self.start = [aux]
-			self.what = -1
-#			self.go.publish(mens)
-#			print(self.done)
-		self.go.publish('')
-		self.done = False
-		#print("Estoy en " + str(self.start) + ", ire a " + str(self.objective))
-		self.objective = aux
-		'''
-		#self.buscador.publish('find') #falta probar si sirve
 
 	def goTo(self, objective):
 		save = self.objective
 		print('Estoy en ' + str(self.start[0]) + ', ire a ' + str(objective))
 		self.objective = objective
 		self.done = False
-		#while not self.done and not rospy.is_shutdown():
 		mens = self.makePath(self.maze)
 		print(mens)
 		if len(mens) != 0:
@@ -565,52 +526,52 @@ class Master:
 			self.what = -1
 		self.objective = save
 
+	def knockDoor(self):
+		self.buscador.publish('Clear')
+		self.chatter.say('Alakazam')
+		while self.wallCent:
+			rospy.sleep(1)
+		self.chatter.say('Going through')
+		while not rospy.is_shutdown() and not self.done:
+			self.go.publish('Go')
+		self.go.publish('')
+		print(self.start)
+		self.start = [self.manyStates(self.start[0],['Go'])]
+		print(self.start)
+		rospy.sleep(1)
+
 if __name__ == "__main__":
-	'''
-	mas = Master()
-	mas.start = [[0,1,'r']]
-	mas.goTo([[0,0,'d']])
-	mas.goTo([[1,1,'l']])
-	mas.goTo([[1,0,'r']])
-	'''
+	
 	mas = Master()
 	rospy.sleep(1)
-	'''
+	##Parte por localizarse, buscar la puerta roja y las llaves rojas
 	mas.start = mas.localize()
 	puerta = False
-	print(mas.flagPuerta)
 	if mas.flagPuerta is True:
 		mas.findDoor()
 		print('puertecinha')	
 		puerta = True
 	if mas.collected is False:
-		print('entrando a modo busqueda')
+		print('Buscando cosas rojas')
 		mas.modo_busqueda()
 	if puerta is False:
 		mas.findDoor()
-		print('pupupu-puerta')
-	print('Ire a la puerta')
-	#mas.puerta = [1,3,'u']
+		print('pupupu-puerta roja!')
+	##Con todas las cosas rojas encontradas, va a la puerta
+	print('Ire a la puerta roja')
 	mas.goDoor()
-	mas.buscador.publish('Clear')
-	rospy.sleep(1)
-	mas.chatter.say('Alakazam')
-	while mas.wallCent:
-		print('Dejenme pasar :c')
-		rospy.sleep(1)
-	#mas.chatter.say('Starting Mision')
-	mens = 'Go#Go'
-	while not rospy.is_shutdown() and not mas.done:
-		mas.go.publish(mens)
-	mas.go.publish('')
-	print(mas.start)
-	mas.start = [mas.manyStates(mas.start[0], ['Go','Go'])]
-	print(mas.start)
-	rospy.sleep(3)
-	'''
-	mas.start = [[2,3,'u']]
+	mas.knockDoor()
+	##Hacemos que se olvide de todo
+	puerta = False
+	mas.puerta = []
+	##Ahora repite lo mismo, pero buscando además a averageMan y con las cosas amarillas 
+	##(no se localiza, por lo que se salta el primer paso)
+	print('Starting search')
+	mas.modo_busqueda()
+	print('Going to door')
+	mas.goDoor()
+	mas.knockDoor()
+	##Finalmente, va a la salida
 	mas.explore()
-	mas.chatter.say("I would like to thank my parents and my programmers, and Beelzebot, I wil find you and i will kill you")
+	mas.chatter.say("Beelzebot, this is your demise")
 
-
-	#rospy.spin()

@@ -201,6 +201,8 @@ class Nodo:
 		self.flagKey = 0
 		self.flagAverage = 0
 		self.flagPuerta = 0
+		self.nKey = 0
+		self.stage = 0
 		self.items = [False,False,False]
 		self.collector = [False,False,False]
 
@@ -237,27 +239,18 @@ class Nodo:
 			recorrido = self.modulo(self.posx - self.inicioX, self.posy - self.inicioY)
 			if not self.center and (abs(recorrido) < metros*(1-self.cl) * 0.9):
 				cont = min(cont + 0.05, 1)
-				#print('acelero')
 			else:
 				cont = max(cont - 0.05, 0.1)
-				#print('freno')
-
-			#if (self.distance[0]) > 0.5:
 			if self.right and not self.left:
 				move_cmd.angular.z = 1
 				cont = max(cont - 0.05, 0.5)
-				#cont = 0.3
-			#elif (self.distance[2]) > 0.5:
 			elif self.left and not self.right:
 				cont = max(cont - 0.05, 0.5)
 				move_cmd.angular.z = -1
-				#cont = 0.3
 			else:
 				move_cmd.angular.z = -0.02
 			move_cmd.linear.x = vel_max * cont
-			#print(vel_max * cont)
 			if (self.distance[1] < 0.6 and self.distance[1] != 0.0):
-				#print(self.distance[1])
 				break
 		while (not rospy.is_shutdown()) and self.distance[1] < 0.1:
 			move_cmd.linear.x = -0.1
@@ -282,7 +275,6 @@ class Nodo:
 			if not self.partir and thetaReal:
 				thetaReal = False
 				objetivo += self.theta
-				#print(self.theta, objetivo)
 				if (objetivo > 360):
 					objetivo -= 360
 			self.cmd_vel.publish(move_cmd)
@@ -355,7 +347,6 @@ class Nodo:
 			self.cmd_vel.publish(move_cmd)
 			self.r.sleep()
 			self.check.publish('1')
-			#print(self.items)
 			for i in range(len(self.items)):
 				if self.items[i] == '1' and i == 0:
 					self.collector[0] = True
@@ -364,14 +355,11 @@ class Nodo:
 				elif self.items[i] == '1' and i == 2:
 					self.collector[2] = True
 					self.hodor.publish('1')
-			#print(self.collector)
-			#self.yell()
 			if (self.enderezado):
 				break
 		print(self.items)
 		self.parar()
 		self.espera(0.7)
-		#roboto.chatter.say('Objective located ready for annihilation')
 
 	def avanzaPasillo(self, vel):
 		while(not rospy.is_shutdown()):
@@ -396,7 +384,6 @@ class Nodo:
 		if self.distance[1] < 0.7:# and self.pared:
 			self.enderezar(1)
 			for j in range(4):
-				#print('identificando')
 				self.check.publish('1')
 				for i in range(len(self.items)):
 					if self.items[i] == '1' and i == 0:
@@ -408,12 +395,10 @@ class Nodo:
 						self.hodor.publish('1')
 			print(self.collector)
 			self.yell()
-			# self.chatter.say('Objective lost')
 			print('Pared')
 			val = True
 		else:
 			print('Pasillo')
-			#self.chatter.say('Objective found')
 			val = False
 		rospy.sleep(1)
 		return val
@@ -449,15 +434,4 @@ class Nodo:
 if __name__ == "__main__":
 	roboto = Nodo()
 	rospy.sleep(1)
-	while(not rospy.is_shutdown()):
-			print('identificando')
-			roboto.check.publish('1')
-			rospy.sleep(1)
-	#for i in range(4):
-	#	roboto.gira(90,1)
-	#	roboto.enderezar(1)
-		#rospy.sleep(1)
-	#	roboto.yell()
-	#	rospy.sleep(1)
-	#roboto.enderezar(1)
 	rospy.spin()
